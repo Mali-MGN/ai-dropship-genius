@@ -1,10 +1,9 @@
-
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { 
-  ChevronUpDown, 
+  ChevronsUpDown, 
   ShoppingCart, 
   TrendingUp, 
   Star, 
