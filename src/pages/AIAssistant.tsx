@@ -1,7 +1,7 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Select,
   SelectContent,
@@ -32,8 +33,13 @@ import {
   Megaphone,
   BarChart,
   Target,
-  Settings
+  Settings,
+  ThumbsUp,
+  ThumbsDown,
+  Star
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { v4 as uuidv4 } from 'uuid';
 
 const AIAssistant = () => {
   const [activeTab, setActiveTab] = useState("chat");
@@ -43,8 +49,20 @@ const AIAssistant = () => {
   const [inputMessage, setInputMessage] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState("");
+  const [feedbackMessage, setFeedbackMessage] = useState<number | null>(null);
+  const [feedbackRating, setFeedbackRating] = useState<number | null>(null);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Generate a session ID if one doesn't exist
+  useEffect(() => {
+    if (!sessionId) {
+      setSessionId(uuidv4());
+    }
+  }, [sessionId]);
 
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return;
@@ -129,6 +147,64 @@ const AIAssistant = () => {
     }
   };
 
+  const openFeedbackForm = (messageId: number) => {
+    setFeedbackMessage(messageId);
+    setShowFeedbackForm(true);
+  };
+
+  const closeFeedbackForm = () => {
+    setFeedbackMessage(null);
+    setFeedbackRating(null);
+    setFeedbackText("");
+    setShowFeedbackForm(false);
+  };
+
+  const submitFeedback = async () => {
+    if (feedbackRating === null || feedbackMessage === null) {
+      toast({
+        title: "Error",
+        description: "Please provide a rating before submitting feedback.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const messageIndex = messages.findIndex(m => m.id === feedbackMessage);
+      if (messageIndex < 1) return; // Need at least 2 messages (user question and AI response)
+      
+      const userMessage = messages[messageIndex - 1];
+      const aiMessage = messages[messageIndex];
+      
+      // Get current authenticated user (if any)
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Insert feedback into the database
+      await supabase.from('ai_assistant_feedback').insert({
+        user_id: user?.id || null,
+        message_content: userMessage.content,
+        assistant_response: aiMessage.content,
+        rating: feedbackRating,
+        feedback_text: feedbackText.trim() || null,
+        session_id: sessionId
+      });
+
+      toast({
+        title: "Thank you for your feedback!",
+        description: "Your feedback helps us improve our AI assistant.",
+      });
+      
+      closeFeedbackForm();
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem submitting your feedback. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Mock recommendations data
   const productRecommendations = [
     { id: 1, name: "Portable Ring Light with Phone Holder", confidence: 92, category: "Electronics" },
@@ -199,6 +275,18 @@ const AIAssistant = () => {
                                 minute: "2-digit",
                               })}
                             </div>
+                            {message.role === "assistant" && (
+                              <div className="flex space-x-2 pt-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-6 w-6" 
+                                  onClick={() => openFeedbackForm(message.id)}
+                                >
+                                  <Star className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
                           </div>
                           {message.role === "user" && (
                             <Avatar className="h-8 w-8 border">
@@ -231,6 +319,57 @@ const AIAssistant = () => {
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background to-transparent h-20 pointer-events-none" />
               </CardContent>
             </Card>
+
+            {/* Feedback Dialog */}
+            {showFeedbackForm && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <Card className="w-full max-w-md mx-auto">
+                  <CardHeader>
+                    <CardTitle>Rate this response</CardTitle>
+                    <CardDescription>
+                      Your feedback helps us improve our AI assistant
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex justify-center space-x-2">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <Button
+                          key={rating}
+                          variant={feedbackRating === rating ? "default" : "outline"}
+                          size="icon"
+                          className="h-10 w-10"
+                          onClick={() => setFeedbackRating(rating)}
+                        >
+                          <Star 
+                            className={`h-6 w-6 ${feedbackRating !== null && rating <= feedbackRating ? "fill-current text-yellow-400" : ""}`} 
+                          />
+                        </Button>
+                      ))}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label htmlFor="feedback" className="text-sm font-medium">
+                        Additional comments (optional)
+                      </label>
+                      <Textarea
+                        id="feedback"
+                        placeholder="Tell us what you liked or how we could improve..."
+                        value={feedbackText}
+                        onChange={(e) => setFeedbackText(e.target.value)}
+                      />
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={closeFeedbackForm}>
+                      Cancel
+                    </Button>
+                    <Button onClick={submitFeedback}>
+                      Submit Feedback
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </div>
+            )}
 
             <div className="fixed bottom-4 left-4 right-4 bg-background z-10 max-w-5xl mx-auto">
               <div className="flex gap-2 items-center">
