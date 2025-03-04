@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,15 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import {
   Bot,
   User,
@@ -406,157 +414,4 @@ const AIAssistant = () => {
                       <li className="flex items-start gap-2">
                         <div className="bg-amber-500/20 text-amber-600 p-1 rounded-full mt-0.5">
                           <svg width="12" height="12" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M8.4449 0.608765C8.0183 -0.107015 6.9817 -0.107015 6.55509 0.608766L0.161178 11.3368C-0.275824 12.07 0.252503 13 1.10608 13H13.8939C14.7475 13 15.2758 12.07 14.8388 11.3368L8.4449 0.608765ZM7.4141 1.12073C7.45288 1.05566 7.54712 1.05566 7.5859 1.12073L13.9797 11.8488C14.0196 11.9154 13.9715 12 13.8939 12H1.10608C1.02849 12 0.980454 11.9154 1.02029 11.8488L7.4141 1.12073ZM6.8269 4.48611C6.81221 4.10423 7.11783 3.78663 7.5 3.78663C7.88217 3.78663 8.18778 4.10423 8.1731 4.48612L8.01921 8.48701C8.00848 8.766 7.7792 8.98663 7.5 8.98663C7.2208 8.98663 6.99151 8.766 6.98078 8.48701L6.8269 4.48611ZM8.24989 10.476C8.24989 10.8902 7.9141 11.226 7.49989 11.226C7.08567 11.226 6.74989 10.8902 6.74989 10.476C6.74989 10.0618 7.08567 9.72599 7.49989 9.72599C7.9141 9.72599 8.24989 10.0618 8.24989 10.476Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                          </svg>
-                        </div>
-                        <span>Cart abandonment rate is 8% higher than industry benchmarks</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Assistant Preferences</CardTitle>
-                <CardDescription>
-                  Configure how the AI assistant works for you
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">Product Recommendations</h3>
-                    <p className="text-sm text-muted-foreground">Receive AI-powered product suggestions</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">Marketing Insights</h3>
-                    <p className="text-sm text-muted-foreground">Get marketing improvement suggestions</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">Price Optimization</h3>
-                    <p className="text-sm text-muted-foreground">Allow AI to suggest optimal pricing</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">Competitive Analysis</h3>
-                    <p className="text-sm text-muted-foreground">Receive insights about competitors</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">Voice Commands</h3>
-                    <p className="text-sm text-muted-foreground">Enable voice interaction with AI</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">Proactive Suggestions</h3>
-                    <p className="text-sm text-muted-foreground">Let AI make unprompted suggestions</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>AI Behavior</CardTitle>
-                <CardDescription>
-                  Customize how the AI assistant communicates
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h3 className="font-medium mb-2">Communication Style</h3>
-                  <Select defaultValue="balanced">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select style" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="professional">Professional & Formal</SelectItem>
-                      <SelectItem value="balanced">Balanced & Helpful</SelectItem>
-                      <SelectItem value="friendly">Friendly & Conversational</SelectItem>
-                      <SelectItem value="direct">Direct & Concise</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <h3 className="font-medium mb-2">Response Length</h3>
-                  <Select defaultValue="medium">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select length" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="brief">Brief</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="detailed">Detailed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <h3 className="font-medium mb-2">Knowledge Specialization</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="ecommerce" defaultChecked />
-                      <label htmlFor="ecommerce" className="text-sm">E-commerce & Dropshipping</label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="marketing" defaultChecked />
-                      <label htmlFor="marketing" className="text-sm">Digital Marketing</label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="product" defaultChecked />
-                      <label htmlFor="product" className="text-sm">Product Sourcing</label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="customer" defaultChecked />
-                      <label htmlFor="customer" className="text-sm">Customer Service</label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="analytics" defaultChecked />
-                      <label htmlFor="analytics" className="text-sm">Business Analytics</label>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </MainLayout>
-  );
-};
-
-export default AIAssistant;
+                            <path d="M8.4449 0.608765C8.0183 -0.107015 6.9817 -0.107015 6.55509 0.608766L0.161178 11.3368C-0.275824 12.07 0.252503 13 1.10608 13H13.8939C14.7475 13 15.2758 12.07 14.8388 11.3368L8.4449 0.608765ZM7.4141 1.12073C7.45288 1.05566 7.54712 1.05566 7.5859 1.12073L13.9797 11.8488C14.0196 11.9154 13.9715 12 13.8939 12H1.10608C1.02849 12 0.980454 11.9154 1.02029 11.8488L7.4141 1.12073ZM6.8269 4.48611C6.81221 4.10423 7.11783 3.78663 7.5 3.78663C7.88217 3.78663 8.18778 4.10423 8.1731 4.48612L8.01921 8.48701C8.00848 8.766 7.7792 8.98663 7.5 8.9866
