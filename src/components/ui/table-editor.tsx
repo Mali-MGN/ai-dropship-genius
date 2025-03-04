@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -109,7 +108,18 @@ export function TableEditor({
   const handleSaveEdit = (rowId: string | number) => {
     const updatedData = tableData.map(row => {
       if (row[primaryKey] === rowId) {
-        const updatedRow = { ...row, ...editedValues };
+        // Create a copy of editedValues to modify
+        const updatedValues = { ...editedValues };
+        
+        // Fix for the type error: Convert string to number for number type columns
+        columns.forEach(column => {
+          if (column.type === 'number' && typeof updatedValues[column.accessorKey] === 'string') {
+            const numValue = parseFloat(updatedValues[column.accessorKey]);
+            updatedValues[column.accessorKey] = isNaN(numValue) ? 0 : numValue;
+          }
+        });
+        
+        const updatedRow = { ...row, ...updatedValues };
         if (onRowUpdate) {
           onRowUpdate(updatedRow);
         }
@@ -131,7 +141,17 @@ export function TableEditor({
     const newRow = { [primaryKey]: Date.now() };
     columns.forEach(column => {
       if (column.accessorKey !== primaryKey) {
-        newRow[column.accessorKey] = '';
+        // Set default values based on column type
+        if (column.type === 'number') {
+          newRow[column.accessorKey] = 0;
+        } else if (column.type === 'checkbox') {
+          newRow[column.accessorKey] = false;
+        } else if (column.type === 'select' && column.options && column.options.length > 0) {
+          const firstOption = column.options[0];
+          newRow[column.accessorKey] = typeof firstOption === 'string' ? firstOption : firstOption.value;
+        } else {
+          newRow[column.accessorKey] = '';
+        }
       }
     });
     
@@ -276,7 +296,7 @@ export function TableEditor({
       case 'select':
         return (
           <Select
-            value={value || ''}
+            value={String(value || '')}
             onValueChange={(val) => handleInputChange(column.accessorKey, val)}
           >
             <SelectTrigger className="w-full h-8">
@@ -299,8 +319,12 @@ export function TableEditor({
         return (
           <Input
             type="number"
-            value={value || ''}
-            onChange={(e) => handleInputChange(column.accessorKey, e.target.value)}
+            value={value !== undefined ? value : ''}
+            onChange={(e) => {
+              // Convert to number immediately for number type
+              const numValue = e.target.value === '' ? 0 : parseFloat(e.target.value);
+              handleInputChange(column.accessorKey, isNaN(numValue) ? 0 : numValue);
+            }}
             className="h-8"
           />
         );
