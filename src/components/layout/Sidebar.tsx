@@ -1,5 +1,5 @@
 
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -22,48 +22,50 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open, onOpenChange }: SidebarProps) {
+  const location = useLocation();
+  
   const links = [
     { 
       name: "Dashboard", 
       href: "/", 
       icon: LayoutDashboard,
-      current: true
+      current: location.pathname === "/"
     },
     { 
       name: "Product Discovery", 
       href: "/products/discovery", 
       icon: Search,
-      current: false
+      current: location.pathname === "/products/discovery"
     },
     { 
       name: "Store Management", 
       href: "/store", 
       icon: ShoppingCart,
-      current: false
+      current: location.pathname === "/store"
     },
     { 
       name: "Marketing", 
       href: "/marketing", 
       icon: Megaphone,
-      current: false
+      current: location.pathname === "/marketing"
     },
     { 
       name: "Orders & Shipping", 
       href: "/orders", 
       icon: Truck,
-      current: false
+      current: location.pathname === "/orders"
     },
     { 
       name: "Analytics", 
       href: "/analytics", 
       icon: BarChart4,
-      current: false
+      current: location.pathname === "/analytics"
     },
     { 
       name: "AI Assistant", 
       href: "/assistant", 
       icon: MessageSquare,
-      current: false
+      current: location.pathname === "/assistant"
     },
   ];
 
