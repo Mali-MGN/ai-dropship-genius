@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { 
   Search, 
   Filter, 
@@ -21,7 +22,10 @@ import {
   BarChart, 
   Archive,
   Users,
-  ShoppingBag
+  ShoppingBag,
+  Star,
+  Eye,
+  Import
 } from "lucide-react";
 
 // Sample trending products data - same as in Index.tsx
