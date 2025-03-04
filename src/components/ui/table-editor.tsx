@@ -138,18 +138,28 @@ export function TableEditor({
   };
 
   const handleAddRow = () => {
-    const newRow = { [primaryKey]: Date.now() };
+    // Create a new row with proper typing for each column
+    const newRow: Record<string, any> = { [primaryKey]: Date.now() };
+    
     columns.forEach(column => {
       if (column.accessorKey !== primaryKey) {
-        // Set default values based on column type
+        // Set default values based on column type with proper type handling
         if (column.type === 'number') {
           newRow[column.accessorKey] = 0;
         } else if (column.type === 'checkbox') {
+          // For checkbox columns, we should use boolean values
           newRow[column.accessorKey] = false;
         } else if (column.type === 'select' && column.options && column.options.length > 0) {
           const firstOption = column.options[0];
-          newRow[column.accessorKey] = typeof firstOption === 'string' ? firstOption : firstOption.value;
+          // For select columns, we need to assign the value with the correct type
+          // This could be a string or another type depending on the column definition
+          if (typeof firstOption === 'string') {
+            newRow[column.accessorKey] = firstOption;
+          } else {
+            newRow[column.accessorKey] = firstOption.value;
+          }
         } else {
+          // For text and other types, use empty string as default
           newRow[column.accessorKey] = '';
         }
       }
