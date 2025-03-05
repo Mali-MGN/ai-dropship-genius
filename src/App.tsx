@@ -11,6 +11,7 @@ import ProductDiscovery from "./pages/ProductDiscovery";
 import StoreManagement from "./pages/StoreManagement";
 import AIAssistant from "./pages/AIAssistant";
 import Analytics from "./pages/Analytics";
+import Orders from "./pages/Orders";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -59,6 +60,11 @@ const App = () => (
             <Route path="/analytics" element={
               <ProtectedRoute>
                 <Analytics />
+              </ProtectedRoute>
+            } />
+            <Route path="/orders" element={
+              <ProtectedRoute>
+                <Orders />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
