@@ -14,6 +14,7 @@ import Analytics from "./pages/Analytics";
 import Orders from "./pages/Orders";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Marketing from "./pages/Marketing";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<Index />} />
+            <Route path="/marketing" element={<Marketing />} />
             <Route path="/products/discovery" element={
               <ProtectedRoute>
                 <ProductDiscovery />
