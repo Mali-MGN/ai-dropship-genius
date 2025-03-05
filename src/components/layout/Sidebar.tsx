@@ -39,9 +39,9 @@ export function Sidebar({ open, onOpenChange }: SidebarProps) {
     },
     { 
       name: "Store Management", 
-      href: "/store", 
+      href: "/store/management", 
       icon: ShoppingCart,
-      current: location.pathname === "/store"
+      current: location.pathname === "/store/management"
     },
     { 
       name: "Marketing", 
@@ -63,9 +63,9 @@ export function Sidebar({ open, onOpenChange }: SidebarProps) {
     },
     { 
       name: "AI Assistant", 
-      href: "/assistant", 
+      href: "/ai/assistant", 
       icon: MessageSquare,
-      current: location.pathname === "/assistant"
+      current: location.pathname === "/ai/assistant"
     },
   ];
 
@@ -116,6 +116,11 @@ export function Sidebar({ open, onOpenChange }: SidebarProps) {
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
                 )}
+                onClick={() => {
+                  if (window.innerWidth < 768) {
+                    onOpenChange(false);
+                  }
+                }}
               >
                 <link.icon className="h-5 w-5" />
                 {link.name}
