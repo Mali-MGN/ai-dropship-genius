@@ -1,9 +1,12 @@
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Bell, Menu, X } from "lucide-react";
+import { Search, Bell, Menu, X, LogOut, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -12,6 +15,9 @@ interface NavbarProps {
 export function Navbar({ onMenuClick }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [notifications, setNotifications] = useState(3);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,6 +27,19 @@ export function Navbar({ onMenuClick }: NavbarProps) {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Signed out successfully",
+      description: "You have been signed out of your account.",
+    });
+    navigate("/auth");
+  };
+
+  const handleSignIn = () => {
+    navigate("/auth");
+  };
 
   return (
     <header
@@ -50,20 +69,35 @@ export function Navbar({ onMenuClick }: NavbarProps) {
               />
             </div>
             
-            <div className="relative">
-              <Button variant="ghost" size="icon" className="text-muted-foreground">
-                <Bell className="h-5 w-5" />
-                {notifications > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-primary text-[10px] font-bold flex items-center justify-center text-white rounded-full">
-                    {notifications}
-                  </span>
-                )}
-              </Button>
-            </div>
+            {user && (
+              <div className="relative">
+                <Button variant="ghost" size="icon" className="text-muted-foreground">
+                  <Bell className="h-5 w-5" />
+                  {notifications > 0 && (
+                    <span className="absolute top-1 right-1 w-4 h-4 bg-primary text-[10px] font-bold flex items-center justify-center text-white rounded-full">
+                      {notifications}
+                    </span>
+                  )}
+                </Button>
+              </div>
+            )}
             
-            <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium">
-              AG
-            </div>
+            {user ? (
+              <>
+                <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium">
+                  {user.email?.substring(0, 2).toUpperCase() || 'AG'}
+                </div>
+                <Button variant="ghost" size="sm" onClick={handleSignOut} className="hidden md:flex">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <Button variant="default" size="sm" onClick={handleSignIn}>
+                <LogIn className="mr-2 h-4 w-4" />
+                Sign In
+              </Button>
+            )}
           </div>
         </div>
       </div>
