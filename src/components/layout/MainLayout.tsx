@@ -21,7 +21,10 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
+      <Sidebar 
+        open={sidebarOpen} 
+        onOpenChange={(open) => setSidebarOpen(open)} 
+      />
       
       <div className="flex flex-col flex-1 w-full overflow-hidden">
         <Navbar onMenuClick={() => setSidebarOpen(true)} />

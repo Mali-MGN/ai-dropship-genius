@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Home,
@@ -15,9 +16,11 @@ import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   className?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export const Sidebar = ({ className }: SidebarProps) => {
+export const Sidebar = ({ className, open, onOpenChange }: SidebarProps) => {
   const { collapsed, onExpand, onCollapse } = useSidebar();
 
   const sidebarLinks = [
