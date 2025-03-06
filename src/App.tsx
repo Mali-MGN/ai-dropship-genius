@@ -1,86 +1,55 @@
+import React from 'react';
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+} from 'react-router-dom';
+import { Dashboard } from '@/pages/Dashboard';
+import { Login } from '@/pages/Login';
+import { Register } from '@/pages/Register';
+import { ForgotPassword } from '@/pages/ForgotPassword';
+import { Settings } from '@/pages/Settings';
+import { useAuth } from '@/context/AuthContext';
+import { VerifyEmail } from '@/pages/VerifyEmail';
+import { AIAssistant } from '@/pages/AIAssistant';
+import { ProductDiscovery } from '@/pages/ProductDiscovery';
+import { AIProductDiscovery } from '@/pages/AIProductDiscovery';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
-import { useAuth } from "./context/AuthContext";
-import Index from "./pages/Index";
-import ProductDiscovery from "./pages/ProductDiscovery";
-import StoreManagement from "./pages/StoreManagement";
-import AIAssistant from "./pages/AIAssistant";
-import Analytics from "./pages/Analytics";
-import Orders from "./pages/Orders";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
-import Marketing from "./pages/Marketing";
-import Settings from "./pages/Settings";
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+          <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+          <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+          <Route path="/verify-email" element={<PublicRoute><VerifyEmail /></PublicRoute>} />
+          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          <Route path="/ai-assistant" element={<PrivateRoute><AIAssistant /></PrivateRoute>} />
+          <Route path="/product-discovery" element={<PrivateRoute><ProductDiscovery /></PrivateRoute>} />
+          <Route path="/ai-product-discovery" element={<PrivateRoute><AIProductDiscovery /></PrivateRoute>} />
+          <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+        </Routes>
+      </AuthProvider>
+    </Router>
+  );
+}
 
-const queryClient = new QueryClient();
+function AuthProvider({ children }: { children: React.ReactNode }) {
+  const auth = useAuth();
+  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
+}
 
-// Protected route component
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  
-  if (loading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
-  }
-  
-  if (!user) {
-    return <Navigate to="/auth" />;
-  }
-  
-  return <>{children}</>;
-};
+function PrivateRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  return user ? <>{children}</> : <Navigate to="/login" />;
+}
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<Index />} />
-            <Route path="/marketing" element={<Marketing />} />
-            <Route path="/products/discovery" element={
-              <ProtectedRoute>
-                <ProductDiscovery />
-              </ProtectedRoute>
-            } />
-            <Route path="/store/management" element={
-              <ProtectedRoute>
-                <StoreManagement />
-              </ProtectedRoute>
-            } />
-            <Route path="/ai/assistant" element={
-              <ProtectedRoute>
-                <AIAssistant />
-              </ProtectedRoute>
-            } />
-            <Route path="/analytics" element={
-              <ProtectedRoute>
-                <Analytics />
-              </ProtectedRoute>
-            } />
-            <Route path="/orders" element={
-              <ProtectedRoute>
-                <Orders />
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+function PublicRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  return !user ? <>{children}</> : <Navigate to="/dashboard" />;
+}
 
 export default App;

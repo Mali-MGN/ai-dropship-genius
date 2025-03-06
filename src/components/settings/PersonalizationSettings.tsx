@@ -1,5 +1,5 @@
 
-import React, { useState, Dispatch, SetStateAction } from 'react';
+import React, { useState, Dispatch, SetStateAction, useEffect } from 'react';
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,8 @@ import { Slider } from "@/components/ui/slider";
 import { CheckCircle, XCircle, Info, Shield, Sparkles } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { UserPreferences } from '@/lib/utils';
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 // This would be connected to your data store in a real implementation
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -33,13 +35,97 @@ export const PersonalizationSettings = ({
   disabled = false
 }: PersonalizationSettingsProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [newInterest, setNewInterest] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handlePersonalizationToggle = (enabled: boolean) => {
+  // Fetch user preferences from the database on component mount
+  useEffect(() => {
+    if (user) {
+      fetchUserPreferences();
+    }
+  }, [user]);
+
+  const fetchUserPreferences = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      // If preferences exist in the database, update the state
+      if (data) {
+        onPreferencesChange({
+          interests: data.interests || [],
+          priceRange: {
+            min: data.price_range_min,
+            max: data.price_range_max
+          },
+          enablePersonalization: data.enable_personalization
+        });
+      } else if (user) {
+        // If no preferences exist yet, create a default one
+        await createDefaultPreferences();
+      }
+    } catch (error) {
+      console.error('Error fetching user preferences:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load your personalization preferences.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const createDefaultPreferences = async () => {
+    try {
+      const { error } = await supabase
+        .from('user_preferences')
+        .insert({
+          user_id: user?.id,
+          interests: DEFAULT_PREFERENCES.interests,
+          price_range_min: DEFAULT_PREFERENCES.priceRange.min,
+          price_range_max: DEFAULT_PREFERENCES.priceRange.max,
+          enable_personalization: DEFAULT_PREFERENCES.enablePersonalization
+        });
+
+      if (error) throw error;
+
+      // Set the default preferences in state
+      onPreferencesChange(DEFAULT_PREFERENCES);
+    } catch (error) {
+      console.error('Error creating default preferences:', error);
+    }
+  };
+
+  const handlePersonalizationToggle = async (enabled: boolean) => {
+    if (!user) return;
+
     onPreferencesChange(prev => ({
       ...prev,
       enablePersonalization: enabled
     }));
+
+    try {
+      const { error } = await supabase
+        .from('user_preferences')
+        .update({ enable_personalization: enabled })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating personalization setting:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update personalization setting.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePriceRangeChange = (value: number[]) => {
@@ -52,15 +138,34 @@ export const PersonalizationSettings = ({
     }));
   };
 
-  const addInterest = () => {
-    if (!newInterest.trim()) return;
+  const addInterest = async () => {
+    if (!newInterest.trim() || !user) return;
     
     if (!preferences.interests.includes(newInterest.trim().toLowerCase())) {
+      const updatedInterests = [...preferences.interests, newInterest.trim().toLowerCase()];
+      
       onPreferencesChange(prev => ({
         ...prev,
-        interests: [...prev.interests, newInterest.trim().toLowerCase()]
+        interests: updatedInterests
       }));
-      setNewInterest("");
+      
+      try {
+        const { error } = await supabase
+          .from('user_preferences')
+          .update({ interests: updatedInterests })
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+        
+        setNewInterest("");
+      } catch (error) {
+        console.error('Error adding interest:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save your interest.",
+          variant: "destructive",
+        });
+      }
     } else {
       toast({
         title: "Interest already exists",
@@ -70,19 +175,67 @@ export const PersonalizationSettings = ({
     }
   };
 
-  const removeInterest = (interest: string) => {
+  const removeInterest = async (interest: string) => {
+    if (!user) return;
+    
+    const updatedInterests = preferences.interests.filter(i => i !== interest);
+    
     onPreferencesChange(prev => ({
       ...prev,
-      interests: prev.interests.filter(i => i !== interest)
+      interests: updatedInterests
     }));
+    
+    try {
+      const { error } = await supabase
+        .from('user_preferences')
+        .update({ interests: updatedInterests })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error removing interest:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove the interest.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleSave = () => {
-    toast({
-      title: "Preferences saved",
-      description: "Your personalization preferences have been updated.",
-      duration: 3000,
-    });
+  const handleSave = async () => {
+    if (!user) return;
+    
+    setIsSaving(true);
+    
+    try {
+      const { error } = await supabase
+        .from('user_preferences')
+        .update({
+          price_range_min: preferences.priceRange.min,
+          price_range_max: preferences.priceRange.max,
+          interests: preferences.interests,
+          enable_personalization: preferences.enablePersonalization,
+          last_updated: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Preferences saved",
+        description: "Your personalization preferences have been updated.",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save your preferences.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -168,6 +321,14 @@ export const PersonalizationSettings = ({
                 </div>
               </div>
             </div>
+            
+            <Button 
+              onClick={handleSave} 
+              disabled={disabled || isSaving}
+              className="w-full"
+            >
+              {isSaving ? "Saving..." : "Save Preferences"}
+            </Button>
           </>
         )}
       </div>
