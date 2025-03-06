@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   BrowserRouter as Router,
@@ -10,7 +11,7 @@ import { Login } from '@/pages/Login';
 import { Register } from '@/pages/Register';
 import { ForgotPassword } from '@/pages/ForgotPassword';
 import Settings from '@/pages/Settings';
-import { AuthContext, useAuth } from '@/context/AuthContext';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { VerifyEmail } from '@/pages/VerifyEmail';
 import AIAssistant from '@/pages/AIAssistant';
 import ProductDiscovery from '@/pages/ProductDiscovery';
@@ -37,18 +38,23 @@ function App() {
   );
 }
 
-function AuthProvider({ children }: { children: React.ReactNode }) {
-  const auth = useAuth();
-  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
-}
-
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  }
+  
   return user ? <>{children}</> : <Navigate to="/login" />;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  }
+  
   return !user ? <>{children}</> : <Navigate to="/dashboard" />;
 }
 
