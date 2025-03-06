@@ -15,6 +15,7 @@ import Orders from "./pages/Orders";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Marketing from "./pages/Marketing";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,11 @@ const App = () => (
             <Route path="/orders" element={
               <ProtectedRoute>
                 <Orders />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
