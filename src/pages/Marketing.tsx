@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -10,7 +9,8 @@ import {
   CheckCircle, 
   Users, 
   MessageSquare,
-  ArrowRight
+  ArrowRight,
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -150,7 +150,87 @@ const Marketing = () => {
         </div>
       </section>
 
-      {/* How it Works Section - New Section */}
+      {/* AI Personalization Section - NEW */}
+      <section className="py-12 border-t bg-gradient-to-r from-primary/5 to-blue-500/5">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold mb-4">AI-Powered Product Personalization</h2>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            Discover trending products tailored to your unique preferences
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          <div className="space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="rounded-full bg-primary/10 p-2 mt-1">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-2">Smart Recommendations</h3>
+                <p className="text-muted-foreground">
+                  Our AI analyzes trending products and matches them with your preferences,
+                  saving you hours of product research.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-4">
+              <div className="rounded-full bg-primary/10 p-2 mt-1">
+                <Lock className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-2">Privacy-First Approach</h3>
+                <p className="text-muted-foreground">
+                  Your preferences are stored securely and only used to enhance your product 
+                  discovery experience, with complete control over your data.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-4">
+              <div className="rounded-full bg-primary/10 p-2 mt-1">
+                <Users className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-2">Social Discovery</h3>
+                <p className="text-muted-foreground">
+                  Optionally connect with friends to discover products that match both your
+                  interests, perfect for gift-giving and collaborative shopping.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <Card className="overflow-hidden shadow-lg border-primary/20">
+            <CardContent className="p-0">
+              <div className="p-6 bg-gradient-to-br from-primary/10 to-blue-400/10">
+                <h3 className="text-xl font-semibold mb-3">How It Works</h3>
+                <ol className="space-y-4 text-muted-foreground">
+                  <li className="flex items-center gap-3">
+                    <div className="rounded-full bg-background w-6 h-6 flex items-center justify-center font-semibold text-primary border border-primary/20">1</div>
+                    <span>Enable personalization in your account settings</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <div className="rounded-full bg-background w-6 h-6 flex items-center justify-center font-semibold text-primary border border-primary/20">2</div>
+                    <span>Select your interests and preferences</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <div className="rounded-full bg-background w-6 h-6 flex items-center justify-center font-semibold text-primary border border-primary/20">3</div>
+                    <span>Receive tailored product recommendations</span>
+                  </li>
+                </ol>
+                <div className="mt-6">
+                  <Button className="w-full" asChild>
+                    <Link to="/auth">Try AI Personalization</Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* How it Works Section */}
       <section className="py-12 border-t">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">How It Works</h2>
@@ -252,7 +332,7 @@ const Marketing = () => {
         </div>
       </section>
 
-      {/* Pricing Section - New Section */}
+      {/* Pricing Section */}
       <section className="py-12 border-t">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Simple, Transparent Pricing</h2>
@@ -393,7 +473,7 @@ const Marketing = () => {
         </div>
       </section>
       
-      {/* FAQ Section - New Section */}
+      {/* FAQ Section */}
       <section className="py-12 border-t">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Frequently Asked Questions</h2>
@@ -432,6 +512,17 @@ const Marketing = () => {
             <p className="text-muted-foreground">
               We take security seriously. All data is encrypted, and we use Supabase's enterprise-grade security 
               infrastructure with row-level security policies to ensure your business data stays private.
+            </p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mt-8">
+          <div>
+            <h3 className="text-xl font-semibold mb-2">How does the AI personalization work?</h3>
+            <p className="text-muted-foreground">
+              Our AI uses your selected preferences and interests to match trending products that align with your 
+              tastes. It analyzes product descriptions, categories, and pricing to find the best matches.
+              All personalization is opt-in and your privacy is our top priority.
             </p>
           </div>
         </div>
