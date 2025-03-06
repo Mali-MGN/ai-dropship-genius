@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -42,99 +43,106 @@ export type Database = {
         }
         Relationships: []
       }
+      user_preferences: {
+        Row: {
+          id: string
+          user_id: string
+          interests: string[] | null
+          price_range_min: number
+          price_range_max: number
+          enable_personalization: boolean
+          enable_shopping_history: boolean
+          enable_social_recommendations: boolean
+          last_updated: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          interests?: string[] | null
+          price_range_min?: number
+          price_range_max?: number
+          enable_personalization?: boolean
+          enable_shopping_history?: boolean
+          enable_social_recommendations?: boolean
+          last_updated?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          interests?: string[] | null
+          price_range_min?: number
+          price_range_max?: number
+          enable_personalization?: boolean
+          enable_shopping_history?: boolean
+          enable_social_recommendations?: boolean
+          last_updated?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       scraped_products: {
         Row: {
-          category: string | null
-          compare_price: number | null
-          created_at: string | null
-          description: string | null
           id: string
-          image_url: string | null
-          is_trending: boolean | null
           name: string
+          description: string | null
           price: number | null
+          compare_price: number | null
+          source: string | null
+          image_url: string | null
           product_url: string | null
-          profit_margin: number | null
+          category: string | null
+          tags: string[] | null
           rating: number | null
           review_count: number | null
-          source: string | null
-          tags: string[] | null
           trending_score: number | null
+          is_trending: boolean | null
+          profit_margin: number | null
+          created_at: string | null
           updated_at: string | null
         }
         Insert: {
-          category?: string | null
-          compare_price?: number | null
-          created_at?: string | null
-          description?: string | null
           id?: string
-          image_url?: string | null
-          is_trending?: boolean | null
           name: string
-          price?: number | null
-          product_url?: string | null
-          profit_margin?: number | null
-          rating?: number | null
-          review_count?: number | null
-          source?: string | null
-          tags?: string[] | null
-          trending_score?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          category?: string | null
-          compare_price?: number | null
-          created_at?: string | null
           description?: string | null
-          id?: string
-          image_url?: string | null
-          is_trending?: boolean | null
-          name?: string
           price?: number | null
+          compare_price?: number | null
+          source?: string | null
+          image_url?: string | null
           product_url?: string | null
-          profit_margin?: number | null
+          category?: string | null
+          tags?: string[] | null
           rating?: number | null
           review_count?: number | null
-          source?: string | null
-          tags?: string[] | null
           trending_score?: number | null
+          is_trending?: boolean | null
+          profit_margin?: number | null
+          created_at?: string | null
           updated_at?: string | null
         }
-        Relationships: []
-      }
-      user_preferences: {
-        Row: {
-          enable_personalization: boolean | null
-          enable_shopping_history: boolean | null
-          enable_social_recommendations: boolean | null
-          id: string
-          interests: string[] | null
-          last_updated: string | null
-          price_range_max: number | null
-          price_range_min: number | null
-          user_id: string
-        }
-        Insert: {
-          enable_personalization?: boolean | null
-          enable_shopping_history?: boolean | null
-          enable_social_recommendations?: boolean | null
-          id?: string
-          interests?: string[] | null
-          last_updated?: string | null
-          price_range_max?: number | null
-          price_range_min?: number | null
-          user_id: string
-        }
         Update: {
-          enable_personalization?: boolean | null
-          enable_shopping_history?: boolean | null
-          enable_social_recommendations?: boolean | null
           id?: string
-          interests?: string[] | null
-          last_updated?: string | null
-          price_range_max?: number | null
-          price_range_min?: number | null
-          user_id?: string
+          name?: string
+          description?: string | null
+          price?: number | null
+          compare_price?: number | null
+          source?: string | null
+          image_url?: string | null
+          product_url?: string | null
+          category?: string | null
+          tags?: string[] | null
+          rating?: number | null
+          review_count?: number | null
+          trending_score?: number | null
+          is_trending?: boolean | null
+          profit_margin?: number | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -234,19 +242,4 @@ export type Enums<
   ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
     ? PublicSchema["Enums"][PublicEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof PublicSchema["CompositeTypes"]
-    | { schema: keyof Database },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
-  }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
-    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never

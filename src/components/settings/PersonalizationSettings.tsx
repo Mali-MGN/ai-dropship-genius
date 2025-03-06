@@ -2,12 +2,11 @@
 import React, { useState, Dispatch, SetStateAction, useEffect } from 'react';
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { CheckCircle, XCircle, Info, Shield, Sparkles } from "lucide-react";
+import { CheckCircle, XCircle, Shield } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { UserPreferences } from '@/lib/utils';
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 
 // This would be connected to your data store in a real implementation
 const DEFAULT_PREFERENCES: UserPreferences = {
-  interests: ['electronics', 'fashion', 'home'],
+  interests: ['electronics', 'fashion', 'home decor'],
   priceRange: {
     min: 10,
     max: 200
