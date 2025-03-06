@@ -10,8 +10,7 @@ type AuthContextType = {
   signOut: () => Promise<void>;
 };
 
-// Export the AuthContext so it can be imported directly
-export const AuthContext = createContext<AuthContextType>({
+const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
   loading: true,
