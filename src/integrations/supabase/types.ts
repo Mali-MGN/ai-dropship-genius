@@ -42,6 +42,102 @@ export type Database = {
         }
         Relationships: []
       }
+      scraped_products: {
+        Row: {
+          category: string | null
+          compare_price: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_trending: boolean | null
+          name: string
+          price: number | null
+          product_url: string | null
+          profit_margin: number | null
+          rating: number | null
+          review_count: number | null
+          source: string | null
+          tags: string[] | null
+          trending_score: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          compare_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_trending?: boolean | null
+          name: string
+          price?: number | null
+          product_url?: string | null
+          profit_margin?: number | null
+          rating?: number | null
+          review_count?: number | null
+          source?: string | null
+          tags?: string[] | null
+          trending_score?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          compare_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_trending?: boolean | null
+          name?: string
+          price?: number | null
+          product_url?: string | null
+          profit_margin?: number | null
+          rating?: number | null
+          review_count?: number | null
+          source?: string | null
+          tags?: string[] | null
+          trending_score?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          enable_personalization: boolean | null
+          enable_shopping_history: boolean | null
+          enable_social_recommendations: boolean | null
+          id: string
+          interests: string[] | null
+          last_updated: string | null
+          price_range_max: number | null
+          price_range_min: number | null
+          user_id: string
+        }
+        Insert: {
+          enable_personalization?: boolean | null
+          enable_shopping_history?: boolean | null
+          enable_social_recommendations?: boolean | null
+          id?: string
+          interests?: string[] | null
+          last_updated?: string | null
+          price_range_max?: number | null
+          price_range_min?: number | null
+          user_id: string
+        }
+        Update: {
+          enable_personalization?: boolean | null
+          enable_shopping_history?: boolean | null
+          enable_social_recommendations?: boolean | null
+          id?: string
+          interests?: string[] | null
+          last_updated?: string | null
+          price_range_max?: number | null
+          price_range_min?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

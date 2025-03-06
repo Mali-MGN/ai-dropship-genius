@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   BrowserRouter as Router,
@@ -10,7 +11,7 @@ import { Login } from '@/pages/Login';
 import { Register } from '@/pages/Register';
 import { ForgotPassword } from '@/pages/ForgotPassword';
 import { Settings } from '@/pages/Settings';
-import { useAuth } from '@/context/AuthContext';
+import { AuthContext, useAuth } from '@/context/AuthContext';
 import { VerifyEmail } from '@/pages/VerifyEmail';
 import { AIAssistant } from '@/pages/AIAssistant';
 import { ProductDiscovery } from '@/pages/ProductDiscovery';
