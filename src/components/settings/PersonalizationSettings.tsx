@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, Dispatch, SetStateAction } from 'react';
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,31 +21,29 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   enablePersonalization: false
 };
 
-interface PersonalizationSettingsProps {
-  initialPreferences?: Partial<UserPreferences>;
-  onSave?: (preferences: UserPreferences) => void;
+export interface PersonalizationSettingsProps {
+  preferences: UserPreferences;
+  onPreferencesChange: Dispatch<SetStateAction<UserPreferences>>;
+  disabled?: boolean;
 }
 
 export const PersonalizationSettings = ({ 
-  initialPreferences,
-  onSave
+  preferences,
+  onPreferencesChange,
+  disabled = false
 }: PersonalizationSettingsProps) => {
   const { toast } = useToast();
-  const [preferences, setPreferences] = useState<UserPreferences>({
-    ...DEFAULT_PREFERENCES,
-    ...initialPreferences
-  });
   const [newInterest, setNewInterest] = useState("");
 
   const handlePersonalizationToggle = (enabled: boolean) => {
-    setPreferences(prev => ({
+    onPreferencesChange(prev => ({
       ...prev,
       enablePersonalization: enabled
     }));
   };
 
   const handlePriceRangeChange = (value: number[]) => {
-    setPreferences(prev => ({
+    onPreferencesChange(prev => ({
       ...prev,
       priceRange: {
         min: value[0],
@@ -58,7 +56,7 @@ export const PersonalizationSettings = ({
     if (!newInterest.trim()) return;
     
     if (!preferences.interests.includes(newInterest.trim().toLowerCase())) {
-      setPreferences(prev => ({
+      onPreferencesChange(prev => ({
         ...prev,
         interests: [...prev.interests, newInterest.trim().toLowerCase()]
       }));
@@ -73,14 +71,13 @@ export const PersonalizationSettings = ({
   };
 
   const removeInterest = (interest: string) => {
-    setPreferences(prev => ({
+    onPreferencesChange(prev => ({
       ...prev,
       interests: prev.interests.filter(i => i !== interest)
     }));
   };
 
   const handleSave = () => {
-    onSave?.(preferences);
     toast({
       title: "Preferences saved",
       description: "Your personalization preferences have been updated.",
@@ -89,17 +86,8 @@ export const PersonalizationSettings = ({
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          AI Personalization
-        </CardTitle>
-        <CardDescription>
-          Control how AI personalizes product recommendations for you
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className={disabled ? "opacity-50 pointer-events-none" : ""}>
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
             <Label htmlFor="personalization-toggle">Enable AI Personalization</Label>
@@ -111,6 +99,7 @@ export const PersonalizationSettings = ({
             id="personalization-toggle"
             checked={preferences.enablePersonalization}
             onCheckedChange={handlePersonalizationToggle}
+            disabled={disabled}
           />
         </div>
 
@@ -125,6 +114,7 @@ export const PersonalizationSettings = ({
                     <button 
                       onClick={() => removeInterest(interest)}
                       className="ml-1 h-4 w-4 rounded-full bg-muted/50 flex items-center justify-center hover:bg-muted"
+                      disabled={disabled}
                     >
                       <XCircle className="h-3 w-3" />
                     </button>
@@ -140,11 +130,13 @@ export const PersonalizationSettings = ({
                   value={newInterest}
                   onChange={(e) => setNewInterest(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && addInterest()}
+                  disabled={disabled}
                 />
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={addInterest}
+                  disabled={disabled}
                 >
                   Add
                 </Button>
@@ -155,10 +147,12 @@ export const PersonalizationSettings = ({
               <Label className="mb-2 block">Price Range (${preferences.priceRange.min} - ${preferences.priceRange.max})</Label>
               <Slider
                 defaultValue={[preferences.priceRange.min, preferences.priceRange.max]}
+                value={[preferences.priceRange.min, preferences.priceRange.max]}
                 max={1000}
                 step={10}
                 onValueChange={handlePriceRangeChange}
                 className="my-6"
+                disabled={disabled}
               />
             </div>
 
@@ -176,13 +170,8 @@ export const PersonalizationSettings = ({
             </div>
           </>
         )}
-      </CardContent>
-      <CardFooter className="flex justify-end">
-        <Button onClick={handleSave}>
-          Save Preferences
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 };
 

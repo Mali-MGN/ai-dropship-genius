@@ -109,7 +109,8 @@ const Settings = () => {
               <CardContent className="space-y-6">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
-                    <AvatarImage src={user?.avatar_url || ""} alt="Profile" />
+                    {/* Fix: Use user_metadata.avatar_url instead of avatar_url */}
+                    <AvatarImage src={user?.user_metadata?.avatar_url || ""} alt="Profile" />
                     <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
                   </Avatar>
                   <Button size="sm">Upload New Picture</Button>
