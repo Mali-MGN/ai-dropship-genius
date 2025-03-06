@@ -7,15 +7,15 @@ import {
   Navigate,
 } from 'react-router-dom';
 import Dashboard from '@/pages/Dashboard';
-import Login from '@/pages/Login';
-import Register from '@/pages/Register';
-import ForgotPassword from '@/pages/ForgotPassword';
-import Settings from '@/pages/Settings';
+import { Login } from '@/pages/Login';
+import { Register } from '@/pages/Register';
+import { ForgotPassword } from '@/pages/ForgotPassword';
+import { Settings } from '@/pages/Settings';
 import { AuthContext, useAuth } from '@/context/AuthContext';
-import VerifyEmail from '@/pages/VerifyEmail';
-import AIAssistant from '@/pages/AIAssistant';
-import ProductDiscovery from '@/pages/ProductDiscovery';
-import AIProductDiscovery from '@/pages/AIProductDiscovery';
+import { VerifyEmail } from '@/pages/VerifyEmail';
+import { AIAssistant } from '@/pages/AIAssistant';
+import { ProductDiscovery } from '@/pages/ProductDiscovery';
+import { AIProductDiscovery } from '@/pages/AIProductDiscovery';
 
 function App() {
   return (
