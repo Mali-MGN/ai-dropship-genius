@@ -80,7 +80,7 @@ export class AIService {
       
       if (error) throw error;
       
-      return data as unknown as Product[];
+      return data;
     } catch (error) {
       console.error('Error getting trending products:', error);
       throw error;
