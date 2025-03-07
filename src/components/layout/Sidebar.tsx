@@ -6,23 +6,22 @@ import {
   Settings,
   ShoppingCart,
   Sparkles,
-  Bot
+  Bot,
+  ChevronLeft
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 import { Icons } from "@/components/icons";
-import { useSidebar } from "@/hooks/use-sidebar";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   className?: string;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
+  open: boolean;
+  onClose: () => void;
 }
 
-export const Sidebar = ({ className, open, onOpenChange }: SidebarProps) => {
-  const { collapsed, onExpand, onCollapse } = useSidebar();
-
+export const Sidebar = ({ className, open, onClose }: SidebarProps) => {
   const sidebarLinks = [
     {
       href: "/",
@@ -59,15 +58,29 @@ export const Sidebar = ({ className, open, onOpenChange }: SidebarProps) => {
   return (
     <div
       className={cn(
-        "group relative flex h-full w-64 flex-col border-r bg-secondary",
+        "group fixed inset-y-0 left-0 z-50 flex h-full w-64 flex-col border-r bg-secondary transform transition-transform duration-300",
+        open ? "translate-x-0" : "-translate-x-full md:translate-x-0 md:w-16",
         className
       )}
     >
-      <div className="flex-1 overflow-y-auto py-4 px-3">
-        <div className="mb-8 flex items-center justify-start space-x-2.5 px-4">
+      <div className="flex justify-between items-center p-4">
+        <div className="flex items-center justify-start space-x-2.5">
           <Icons.logo className="h-6 w-6 text-foreground" />
-          <span className="hidden text-lg font-semibold">{`AI Dropship Genius`}</span>
+          <span className={cn("text-lg font-semibold", !open && "md:hidden")}>
+            {`AI Dropship Genius`}
+          </span>
         </div>
+        <Button 
+          onClick={onClose} 
+          variant="ghost" 
+          size="icon" 
+          className="md:hidden"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto py-4 px-3">
         <div className="space-y-2">
           {sidebarLinks.map((link) => (
             <NavLink
@@ -81,7 +94,7 @@ export const Sidebar = ({ className, open, onOpenChange }: SidebarProps) => {
               }
             >
               <link.icon className="h-4 w-4" />
-              <span>{link.label}</span>
+              <span className={cn(!open && "md:hidden")}>{link.label}</span>
             </NavLink>
           ))}
         </div>

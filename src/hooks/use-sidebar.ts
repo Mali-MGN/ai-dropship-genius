@@ -1,15 +1,24 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 export const useSidebar = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [open, setOpen] = useState(false);
+  const location = useLocation();
   
-  const onExpand = () => setCollapsed(false);
-  const onCollapse = () => setCollapsed(true);
+  // Close sidebar when route changes
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
+  
+  const toggleSidebar = () => setOpen(prev => !prev);
+  const closeSidebar = () => setOpen(false);
+  const openSidebar = () => setOpen(true);
   
   return {
-    collapsed,
-    onExpand,
-    onCollapse
+    open,
+    toggleSidebar,
+    closeSidebar,
+    openSidebar
   };
 };

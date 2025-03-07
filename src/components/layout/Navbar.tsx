@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -50,13 +49,11 @@ export function Navbar({ onMenuClick }: NavbarProps) {
     >
       <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
         <div className="flex h-16 items-center justify-between">
-          <div className="md:hidden">
-            <Button variant="ghost" size="icon" onClick={onMenuClick}>
+          <div className="flex items-center">
+            <Button variant="ghost" size="icon" onClick={onMenuClick} className="mr-2">
               <Menu className="h-5 w-5" />
             </Button>
-          </div>
-          
-          <div className="hidden md:block flex-1">
+            
             <h1 className="text-xl font-semibold">AI-Dropship Genius</h1>
           </div>
           
