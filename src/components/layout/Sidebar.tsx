@@ -16,12 +16,13 @@ import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
+  id?: string;
   className?: string;
   open: boolean;
   onClose: () => void;
 }
 
-export const Sidebar = ({ className, open, onClose }: SidebarProps) => {
+export const Sidebar = ({ id, className, open, onClose }: SidebarProps) => {
   const sidebarLinks = [
     {
       href: "/",
@@ -57,6 +58,7 @@ export const Sidebar = ({ className, open, onClose }: SidebarProps) => {
 
   return (
     <div
+      id={id}
       className={cn(
         "group fixed inset-y-0 left-0 z-50 flex h-full w-64 flex-col border-r bg-secondary transform transition-transform duration-300",
         open ? "translate-x-0" : "-translate-x-full md:translate-x-0 md:w-16",

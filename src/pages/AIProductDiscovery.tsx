@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ProductCard } from "@/components/dashboard/ProductCard";
+import { ImportedProducts } from "@/components/dashboard/ImportedProducts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,24 +27,27 @@ import {
   Users,
   RefreshCw,
   ShoppingBag,
-  Star
+  Star,
+  SlidersHorizontal,
+  PlusCircle
 } from "lucide-react";
 
 // Define the product type
 interface Product {
   id: string;
   name: string;
-  image?: string;
+  image_url?: string;
   price: number;
-  comparePrice?: number;
+  compare_price?: number;
   source: string;
   rating?: number;
   trending?: boolean;
-  profit?: number;
+  profit_margin?: number;
   category?: string;
   description?: string;
   tags?: string[];
-  trendingScore?: number;
+  trending_score?: number;
+  similarityScore?: number;
 }
 
 const AIProductDiscovery = () => {
@@ -58,6 +62,7 @@ const AIProductDiscovery = () => {
   const [personalizedProducts, setPersonalizedProducts] = useState<Product[]>([]);
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [competitorProducts, setCompetitorProducts] = useState<Product[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -67,11 +72,22 @@ const AIProductDiscovery = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    // Apply filters when the search query, price range, or selected categories/sources change
+    applyFiltersToProducts();
+  }, [searchQuery, priceRange, selectedCategories, selectedSources]);
+
   const loadProducts = async () => {
     setIsLoading(true);
     try {
-      // Fetch personalized recommendations using our edge function
-      const { data: personalizedData, error: personalizedError } = await supabase.functions.invoke('personalized-recommendations');
+      // Fetch personalized recommendations using our edge function with filters
+      const { data: personalizedData, error: personalizedError } = await supabase.functions.invoke('personalized-recommendations', {
+        body: {
+          search: searchQuery || undefined,
+          category: selectedCategories.length > 0 ? selectedCategories[0] : undefined,
+          source: selectedSources.length > 0 ? selectedSources[0] : undefined
+        }
+      });
       
       if (personalizedError) throw personalizedError;
       
@@ -94,6 +110,7 @@ const AIProductDiscovery = () => {
       }
       
       // For simplicity, let's use the same products as competitor products
+      // In a real application, you'd fetch data from competitor stores
       setCompetitorProducts(trendingData?.slice(0, 5) || []);
       
     } catch (error) {
@@ -108,14 +125,86 @@ const AIProductDiscovery = () => {
     }
   };
 
-  const handleImportProduct = (id: string) => {
-    toast({
-      title: "Product Imported",
-      description: "The product has been added to your store.",
-    });
+  const applyFiltersToProducts = () => {
+    // This function applies client-side filtering to already loaded products
+    // In a production app, you'd typically want to do this filtering on the server
+    
+    let filteredProducts = [...getActiveProducts()];
+    
+    // Apply search query filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filteredProducts = filteredProducts.filter(product => 
+        product.name.toLowerCase().includes(query) || 
+        (product.description && product.description.toLowerCase().includes(query))
+      );
+    }
+    
+    // Apply price range filter
+    filteredProducts = filteredProducts.filter(product => 
+      (product.price >= priceRange[0] && product.price <= priceRange[1])
+    );
+    
+    // Apply category filter
+    if (selectedCategories.length > 0) {
+      filteredProducts = filteredProducts.filter(product => 
+        product.category && selectedCategories.includes(product.category)
+      );
+    }
+    
+    // Apply source filter
+    if (selectedSources.length > 0) {
+      filteredProducts = filteredProducts.filter(product => 
+        selectedSources.includes(product.source)
+      );
+    }
+    
+    // Update the products state based on the active tab
+    switch (selectedTab) {
+      case "ai-recommended":
+        setPersonalizedProducts(filteredProducts);
+        break;
+      case "trending":
+        setTrendingProducts(filteredProducts);
+        break;
+      case "competitors":
+        setCompetitorProducts(filteredProducts);
+        break;
+    }
   };
 
-  const handleBulkImport = () => {
+  const handleImportProduct = async (id: string) => {
+    // Store the imported product ID in localStorage
+    try {
+      const importedProducts = JSON.parse(localStorage.getItem("importedProducts") || "[]");
+      if (!importedProducts.includes(id)) {
+        importedProducts.push(id);
+        localStorage.setItem("importedProducts", JSON.stringify(importedProducts));
+        
+        // Simulate the API call for importing a product
+        // In a real application, you'd save this to your database
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        return true;
+      }
+      
+      toast({
+        title: "Already Imported",
+        description: "This product is already in your inventory.",
+      });
+      return false;
+    } catch (error) {
+      console.error("Error importing product:", error);
+      toast({
+        title: "Import Failed",
+        description: "There was an error importing this product.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const handleBulkImport = async () => {
     if (selectedProducts.length === 0) {
       toast({
         title: "No Products Selected",
@@ -125,11 +214,42 @@ const AIProductDiscovery = () => {
       return;
     }
 
-    toast({
-      title: `${selectedProducts.length} Products Imported`,
-      description: "The selected products have been added to your store.",
-    });
-    setSelectedProducts([]);
+    // Simulate importing multiple products
+    setIsLoading(true);
+    try {
+      const importedProducts = JSON.parse(localStorage.getItem("importedProducts") || "[]");
+      const newlyImported = [];
+      
+      for (const id of selectedProducts) {
+        if (!importedProducts.includes(id)) {
+          importedProducts.push(id);
+          newlyImported.push(id);
+        }
+      }
+      
+      localStorage.setItem("importedProducts", JSON.stringify(importedProducts));
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: `${newlyImported.length} Products Imported`,
+        description: newlyImported.length === selectedProducts.length 
+          ? "All selected products have been added to your inventory."
+          : `${newlyImported.length} of ${selectedProducts.length} products were imported. ${selectedProducts.length - newlyImported.length} were already in your inventory.`,
+      });
+      
+      setSelectedProducts([]);
+    } catch (error) {
+      console.error("Error bulk importing products:", error);
+      toast({
+        title: "Import Failed",
+        description: "There was an error importing the selected products.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleProductSelection = (id: string) => {
@@ -225,116 +345,124 @@ const AIProductDiscovery = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Select>
+            <Select value={selectedCategories[0]} onValueChange={(value) => setSelectedCategories(value ? [value] : [])}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">All Categories</SelectItem>
                 {categories.map(category => (
                   <SelectItem key={category} value={category}>{category}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select>
+            <Select value={selectedSources[0]} onValueChange={(value) => setSelectedSources(value ? [value] : [])}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="All Sources" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">All Sources</SelectItem>
                 {sources.map(source => (
                   <SelectItem key={source} value={source}>{source}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" className="gap-2">
-              <Filter className="h-4 w-4" />
-              Filter
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              {showFilters ? "Hide Filters" : "Show Filters"}
             </Button>
           </div>
         </div>
 
         {/* Advanced Filters Card */}
-        <Card>
-          <CardHeader className="py-4">
-            <CardTitle className="text-lg">Advanced Filters</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Price Range */}
-              <div>
-                <h3 className="font-medium mb-3">Price Range</h3>
-                <div className="space-y-6">
-                  <Slider 
-                    defaultValue={[0, 1000]} 
-                    max={1000} 
-                    step={10} 
-                    value={priceRange}
-                    onValueChange={setPriceRange}
-                  />
-                  <div className="flex items-center justify-between">
-                    <span>${priceRange[0]}</span>
-                    <span>${priceRange[1]}</span>
+        {showFilters && (
+          <Card>
+            <CardHeader className="py-4">
+              <CardTitle className="text-lg">Advanced Filters</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Price Range */}
+                <div>
+                  <h3 className="font-medium mb-3">Price Range</h3>
+                  <div className="space-y-6">
+                    <Slider 
+                      defaultValue={[0, 1000]} 
+                      max={1000} 
+                      step={10} 
+                      value={priceRange}
+                      onValueChange={setPriceRange}
+                    />
+                    <div className="flex items-center justify-between">
+                      <span>${priceRange[0]}</span>
+                      <span>${priceRange[1]}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Category Checkboxes */}
+                <div>
+                  <h3 className="font-medium mb-3">Categories</h3>
+                  <div className="space-y-2">
+                    {categories.slice(0, 4).map(category => (
+                      <div key={category} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`category-${category}`}
+                          checked={selectedCategories.includes(category)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedCategories(prev => [...prev, category]);
+                            } else {
+                              setSelectedCategories(prev => prev.filter(c => c !== category));
+                            }
+                          }}
+                        />
+                        <label 
+                          htmlFor={`category-${category}`}
+                          className="text-sm"
+                        >
+                          {category}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Source Checkboxes */}
+                <div>
+                  <h3 className="font-medium mb-3">Sources</h3>
+                  <div className="space-y-2">
+                    {sources.map(source => (
+                      <div key={source} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`source-${source}`}
+                          checked={selectedSources.includes(source)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedSources(prev => [...prev, source]);
+                            } else {
+                              setSelectedSources(prev => prev.filter(s => s !== source));
+                            }
+                          }}
+                        />
+                        <label 
+                          htmlFor={`source-${source}`}
+                          className="text-sm"
+                        >
+                          {source}
+                        </label>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
-              
-              {/* Category Checkboxes */}
-              <div>
-                <h3 className="font-medium mb-3">Categories</h3>
-                <div className="space-y-2">
-                  {categories.slice(0, 4).map(category => (
-                    <div key={category} className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={`category-${category}`}
-                        checked={selectedCategories.includes(category)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedCategories(prev => [...prev, category]);
-                          } else {
-                            setSelectedCategories(prev => prev.filter(c => c !== category));
-                          }
-                        }}
-                      />
-                      <label 
-                        htmlFor={`category-${category}`}
-                        className="text-sm"
-                      >
-                        {category}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Source Checkboxes */}
-              <div>
-                <h3 className="font-medium mb-3">Sources</h3>
-                <div className="space-y-2">
-                  {sources.map(source => (
-                    <div key={source} className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={`source-${source}`}
-                        checked={selectedSources.includes(source)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedSources(prev => [...prev, source]);
-                          } else {
-                            setSelectedSources(prev => prev.filter(s => s !== source));
-                          }
-                        }}
-                      />
-                      <label 
-                        htmlFor={`source-${source}`}
-                        className="text-sm"
-                      >
-                        {source}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Product Tabs */}
         <Tabs defaultValue="ai-recommended" onValueChange={setSelectedTab}>
@@ -354,8 +482,8 @@ const AIProductDiscovery = () => {
               </TabsTrigger>
             </TabsList>
             {selectedProducts.length > 0 && (
-              <Button onClick={handleBulkImport} className="gap-2">
-                <Archive className="h-4 w-4" />
+              <Button onClick={handleBulkImport} className="gap-2" disabled={isLoading}>
+                <PlusCircle className="h-4 w-4" />
                 Import Selected ({selectedProducts.length})
               </Button>
             )}
@@ -394,16 +522,17 @@ const AIProductDiscovery = () => {
                       product={{
                         id: product.id,
                         name: product.name,
-                        image: product.image,
+                        image: product.image_url,
                         price: product.price,
-                        comparePrice: product.comparePrice,
+                        comparePrice: product.compare_price,
                         source: product.source,
                         rating: product.rating,
-                        trending: product.trending,
-                        profit: product.profit,
-                        category: product.category
+                        trending: product.trending_score > 70,
+                        profit: product.profit_margin,
+                        category: product.category,
+                        similarityScore: product.similarityScore
                       }}
-                      onImport={() => handleImportProduct(product.id)}
+                      onImport={handleImportProduct}
                     />
                   </div>
                 ))
@@ -425,13 +554,18 @@ const AIProductDiscovery = () => {
           </TabsContent>
 
           <TabsContent value="trending" className="mt-0">
-            {/* This will show the same grid but with trending products */}
+            {/* The trending tab content will be rendered using the same pattern as above */}
           </TabsContent>
 
           <TabsContent value="competitors" className="mt-0">
-            {/* This will show the same grid but with competitor products */}
+            {/* The competitors tab content will be rendered using the same pattern as above */}
           </TabsContent>
         </Tabs>
+        
+        {/* Imported Products Section */}
+        <div className="mt-8">
+          <ImportedProducts />
+        </div>
       </div>
     </MainLayout>
   );

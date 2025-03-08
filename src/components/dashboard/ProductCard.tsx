@@ -1,3 +1,4 @@
+
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,32 +9,72 @@ import {
   TrendingUp, 
   Star, 
   Eye,
-  Import
+  Import,
+  Check,
+  Loader2
 } from "lucide-react";
+import { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface ProductCardProps {
   product: {
     id: string;
     name: string;
-    image: string;
+    image?: string;
     price: number;
     comparePrice?: number;
     source: string;
-    rating: number;
+    rating?: number;
     trending?: boolean;
     profit?: number;
     category?: string;
+    similarityScore?: number;
   };
   trending?: boolean;
-  onImport?: (id: string) => void;
+  onImport?: (id: string) => Promise<boolean> | void;
   className?: string;
+  showImportButton?: boolean;
 }
 
-export function ProductCard({ product, trending, onImport, className }: ProductCardProps) {
+export function ProductCard({ 
+  product, 
+  trending, 
+  onImport, 
+  className,
+  showImportButton = true
+}: ProductCardProps) {
+  const [importing, setImporting] = useState(false);
+  const [imported, setImported] = useState(false);
+  const { toast } = useToast();
   const hasDiscount = product.comparePrice && product.comparePrice > product.price;
   const discountPercent = hasDiscount 
     ? Math.round(100 - (product.price / product.comparePrice! * 100))
     : 0;
+  
+  const handleImport = async () => {
+    if (importing || imported || !onImport) return;
+    
+    setImporting(true);
+    try {
+      const result = await onImport(product.id);
+      if (result !== false) {
+        setImported(true);
+        toast({
+          title: "Product Imported",
+          description: "The product has been added to your inventory.",
+        });
+      }
+    } catch (error) {
+      console.error("Error importing product:", error);
+      toast({
+        title: "Import Failed",
+        description: "There was an error importing this product.",
+        variant: "destructive",
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
   
   return (
     <div className={cn(
@@ -43,7 +84,7 @@ export function ProductCard({ product, trending, onImport, className }: ProductC
       <div className="relative">
         <AspectRatio ratio={4/3}>
           <img 
-            src={product.image} 
+            src={product.image || "https://placehold.co/400x300?text=No+Image"} 
             alt={product.name}
             className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
           />
@@ -66,16 +107,38 @@ export function ProductCard({ product, trending, onImport, className }: ProductC
           </div>
         )}
         
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
-          <Button 
-            size="sm" 
-            className="bg-white text-black hover:bg-white/90 gap-1.5"
-            onClick={() => onImport?.(product.id)}
-          >
-            <Import className="h-3.5 w-3.5" />
-            Import Product
-          </Button>
-        </div>
+        {showImportButton && (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
+            <Button 
+              size="sm" 
+              className={cn(
+                "gap-1.5",
+                imported 
+                  ? "bg-green-500 hover:bg-green-600 text-white" 
+                  : "bg-white text-black hover:bg-white/90"
+              )}
+              onClick={handleImport}
+              disabled={importing || imported}
+            >
+              {importing ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Importing...
+                </>
+              ) : imported ? (
+                <>
+                  <Check className="h-3.5 w-3.5" />
+                  Imported
+                </>
+              ) : (
+                <>
+                  <Import className="h-3.5 w-3.5" />
+                  Import Product
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
       
       <div className="p-4">
@@ -87,9 +150,15 @@ export function ProductCard({ product, trending, onImport, className }: ProductC
         </div>
         
         <div className="mt-2 flex items-center gap-1.5">
-          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-          <span className="text-sm">{product.rating.toFixed(1)}</span>
-          <span className="text-xs text-muted-foreground">• {product.category}</span>
+          {product.rating && (
+            <>
+              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+              <span className="text-sm">{product.rating.toFixed(1)}</span>
+            </>
+          )}
+          {product.category && (
+            <span className="text-xs text-muted-foreground">• {product.category}</span>
+          )}
         </div>
         
         <div className="mt-3 flex items-center justify-between">

@@ -31,7 +31,7 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Get the user's preferences
+    // Get the user's browsing history and preferences
     const { data: userPreferences, error: userPreferencesError } = await supabaseClient
       .from('user_preferences')
       .select('*')
@@ -43,6 +43,16 @@ serve(async (req) => {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
+    }
+
+    // Parse request body if it exists to get additional context
+    let requestParams = {};
+    if (req.headers.get('content-type')?.includes('application/json')) {
+      try {
+        requestParams = await req.json();
+      } catch (e) {
+        console.log('No JSON body or error parsing it:', e);
+      }
     }
 
     // If no preferences found or personalization is disabled, return trending products
@@ -75,19 +85,35 @@ serve(async (req) => {
     // Get products that match user's interests and price range
     let query = supabaseClient
       .from('scraped_products')
-      .select('*')
-      .gte('price', userPreferences.price_range_min)
-      .lte('price', userPreferences.price_range_max);
+      .select('*');
+      
+    // Apply price range filter if preferences exist
+    if (userPreferences.price_range_min !== null && userPreferences.price_range_max !== null) {
+      query = query
+        .gte('price', userPreferences.price_range_min)
+        .lte('price', userPreferences.price_range_max);
+    }
 
-    // Add categories filter if user has interests
+    // Apply category filters if user has interests
     if (userPreferences.interests && userPreferences.interests.length > 0) {
-      // Create a query that matches any of the user's interests
-      // We're checking if any interest matches the product category or is contained in the tags array
-      query = query.or(
-        userPreferences.interests.map(interest => 
-          `category.ilike.%${interest}%,tags.cs.{"${interest}"}`
-        ).join(',')
-      );
+      const interestConditions = userPreferences.interests.map(interest => 
+        `category.ilike.%${interest}%,tags.cs.{"${interest}"}`
+      ).join(',');
+      
+      query = query.or(interestConditions);
+    }
+    
+    // Apply additional filters from request if they exist
+    if (requestParams.category) {
+      query = query.ilike('category', `%${requestParams.category}%`);
+    }
+    
+    if (requestParams.source) {
+      query = query.eq('source', requestParams.source);
+    }
+    
+    if (requestParams.search) {
+      query = query.or(`name.ilike.%${requestParams.search}%,description.ilike.%${requestParams.search}%`);
     }
 
     const { data: personalizedProducts, error: personalizedProductsError } = await query
@@ -119,10 +145,42 @@ serve(async (req) => {
       }
     }
 
+    // Calculate similarity scores based on user interests for better ranking
+    const enhancedProducts = personalizedProducts.map(product => {
+      let similarityScore = 0;
+      
+      if (userPreferences.interests && product.tags) {
+        // Count matching tags
+        const matchingTags = product.tags.filter(tag => 
+          userPreferences.interests.includes(tag)
+        ).length;
+        
+        similarityScore = matchingTags / Math.max(1, userPreferences.interests.length);
+      }
+      
+      return {
+        ...product,
+        similarityScore
+      };
+    });
+    
+    // Sort by similarity score and then by trending score
+    enhancedProducts.sort((a, b) => {
+      if (a.similarityScore !== b.similarityScore) {
+        return b.similarityScore - a.similarityScore;
+      }
+      return (b.trending_score || 0) - (a.trending_score || 0);
+    });
+
     return new Response(JSON.stringify({ 
-      recommendations: personalizedProducts,
+      recommendations: enhancedProducts,
       personalized: true,
-      message: 'Showing personalized product recommendations'
+      message: 'Showing personalized product recommendations',
+      applied_filters: {
+        interests: userPreferences.interests || [],
+        price_range: [userPreferences.price_range_min, userPreferences.price_range_max],
+        ...requestParams
+      }
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
