@@ -1,119 +1,76 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { ProductCard } from '@/components/dashboard/ProductCard';
-import { AnalyticsChart } from '@/components/dashboard/AnalyticsChart';
 import { ImportedProducts } from '@/components/dashboard/ImportedProducts';
+import { FinancialStats } from '@/components/dashboard/FinancialStats';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/context/AuthContext';
+
+import {
+  DollarSign,
+  ShoppingCart,
+  TrendingUp,
+  Package,
+  Users,
+  BarChart3,
+  CreditCard,
+} from 'lucide-react';
 
 function Dashboard() {
-  // Sample data for the analytics chart
-  const analyticsData = [
-    { name: 'Jan', value: 3000 },
-    { name: 'Feb', value: 4500 },
-    { name: 'Mar', value: 3800 },
-    { name: 'Apr', value: 5200 },
-    { name: 'May', value: 4800 },
-    { name: 'Jun', value: 5500 }
-  ];
-
-  // Sample product data with improved data
-  const products = [
-    {
-      id: '1',
-      name: 'Wireless Earbuds Pro',
-      price: 49.99,
-      comparePrice: 69.99,
-      source: 'AliExpress',
-      rating: 4.5,
-      trending: true,
-      profit: 17.50,
-      category: 'Electronics'
-    },
-    {
-      id: '2',
-      name: 'Smart Watch Series 5',
-      price: 129.99,
-      comparePrice: 149.99,
-      source: 'Amazon',
-      rating: 4.7,
-      trending: false,
-      profit: 42.30,
-      category: 'Electronics'
-    },
-    {
-      id: '3',
-      name: 'Portable Charger 10000mAh',
-      price: 34.99,
-      comparePrice: 44.99,
-      source: 'Shopify',
-      rating: 4.2,
-      trending: false,
-      profit: 12.25,
-      category: 'Electronics'
-    }
-  ];
+  const { user } = useAuth();
+  const firstName = user?.email?.split('@')[0] || 'there';
 
   return (
     <MainLayout>
-      <div className="flex flex-col space-y-6">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <StatCard 
-            title="Total Revenue" 
-            value="$5,231.89" 
-            change={12.5}
-            description="vs. last month"
-          />
-          <StatCard 
-            title="Active Products" 
-            value="24" 
-            change={3}
-            description="new this week"
-          />
-          <StatCard 
-            title="Conversion Rate" 
-            value="3.2%" 
-            change={-0.4}
-            description="vs. last month"
-          />
-          <StatCard 
-            title="Profit Margin" 
-            value="28.5%" 
-            change={2.1}
-            description="vs. last month"
-          />
-        </div>
-        
-        {/* Analytics Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Sales Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AnalyticsChart title="Monthly Performance" data={analyticsData} />
-          </CardContent>
-        </Card>
-        
-        {/* Top Products */}
+      <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold mb-4">Top Selling Products</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {products.map(product => (
-              <ProductCard 
-                key={product.id}
-                product={product}
-                onImport={() => console.log(`Importing product ${product.id}`)}
-              />
-            ))}
-          </div>
+          <h1 className="text-4xl font-bold tracking-tight">Welcome, {firstName}!</h1>
+          <p className="text-muted-foreground">Here's an overview of your dropshipping business</p>
         </div>
-        
-        {/* Imported Products */}
-        <div className="mt-8">
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Revenue"
+            value="$3,240.45"
+            change={12.5}
+            description="vs. previous month"
+            icon={<DollarSign className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Total Orders"
+            value="156"
+            change={8.2}
+            description="vs. previous month"
+            icon={<ShoppingCart className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Net Profit"
+            value="$1,437.80"
+            change={-2.3}
+            description="vs. previous month"
+            icon={<TrendingUp className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Products"
+            value="23"
+            change={4}
+            description="vs. previous month"
+            icon={<Package className="h-4 w-4" />}
+          />
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Financial Overview</CardTitle>
+              <CardDescription>Your revenue and profits</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FinancialStats />
+            </CardContent>
+          </Card>
+          
           <ImportedProducts />
         </div>
       </div>
