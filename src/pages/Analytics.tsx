@@ -121,28 +121,28 @@ function Analytics() {
             value="$85,240.45" 
             change={15.3}
             description="vs. previous period"
-            icon={DollarSign}
+            icon={<DollarSign className="h-4 w-4" />}
           />
           <StatCard 
             title="Orders" 
             value="2,456" 
             change={8.2}
             description="vs. previous period"
-            icon={ShoppingCart}
+            icon={<ShoppingCart className="h-4 w-4" />}
           />
           <StatCard 
             title="Visitors" 
             value="152,854" 
             change={12.5}
             description="vs. previous period"
-            icon={Users}
+            icon={<Users className="h-4 w-4" />}
           />
           <StatCard 
             title="Conversion Rate" 
             value="3.2%" 
             change={-0.4}
             description="vs. previous period"
-            icon={ArrowUpRight}
+            icon={<ArrowUpRight className="h-4 w-4" />}
           />
         </div>
         
