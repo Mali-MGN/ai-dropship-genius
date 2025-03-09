@@ -17,6 +17,7 @@ import Analytics from '@/pages/Analytics';
 import AIHub from '@/pages/AIHub';
 import ProductDiscovery from '@/pages/ProductDiscovery';
 import Orders from '@/pages/Orders';
+import OrderDetails from '@/pages/OrderDetails';
 import { MainLayout } from './components/layout/MainLayout';
 import { Toaster } from './components/ui/toaster';
 
@@ -53,6 +54,7 @@ function App() {
           <Route path="/product-discovery" element={<PrivateRoute><ProductDiscovery /></PrivateRoute>} />
           <Route path="/customers" element={<PrivateRoute><Customers /></PrivateRoute>} />
           <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
+          <Route path="/orders/:orderId" element={<PrivateRoute><OrderDetails /></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
         </Routes>
         <Toaster />

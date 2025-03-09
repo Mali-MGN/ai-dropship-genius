@@ -42,6 +42,72 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_summary: {
+        Row: {
+          id: string
+          month: number
+          order_count: number
+          total_cost: number
+          total_profit: number
+          total_revenue: number
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          id?: string
+          month: number
+          order_count?: number
+          total_cost?: number
+          total_profit?: number
+          total_revenue?: number
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          id?: string
+          month?: number
+          order_count?: number
+          total_cost?: number
+          total_profit?: number
+          total_revenue?: number
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      integrated_retailers: {
+        Row: {
+          active: boolean
+          api_endpoint: string
+          api_key: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          api_endpoint: string
+          api_key: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          api_endpoint?: string
+          api_key?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scraped_products: {
         Row: {
           category: string | null
@@ -101,6 +167,84 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      user_orders: {
+        Row: {
+          actual_delivery: string | null
+          amount: number
+          cost: number
+          customer_address: string
+          customer_email: string
+          customer_name: string
+          estimated_delivery: string | null
+          id: string
+          order_date: string
+          order_id: string
+          product_id: string
+          profit: number
+          retailer_id: string | null
+          status: string
+          tracking_number: string | null
+          tracking_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_delivery?: string | null
+          amount: number
+          cost: number
+          customer_address: string
+          customer_email: string
+          customer_name: string
+          estimated_delivery?: string | null
+          id?: string
+          order_date?: string
+          order_id: string
+          product_id: string
+          profit: number
+          retailer_id?: string | null
+          status?: string
+          tracking_number?: string | null
+          tracking_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_delivery?: string | null
+          amount?: number
+          cost?: number
+          customer_address?: string
+          customer_email?: string
+          customer_name?: string
+          estimated_delivery?: string | null
+          id?: string
+          order_date?: string
+          order_id?: string
+          product_id?: string
+          profit?: number
+          retailer_id?: string | null
+          status?: string
+          tracking_number?: string | null
+          tracking_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "scraped_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_orders_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "integrated_retailers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_preferences: {
         Row: {
