@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { ProductCard } from '@/components/dashboard/ProductCard';
 import { AnalyticsChart } from '@/components/dashboard/AnalyticsChart';
+import { ImportedProducts } from '@/components/dashboard/ImportedProducts';
 
 function Dashboard() {
   // Sample data for the analytics chart
@@ -17,43 +18,40 @@ function Dashboard() {
     { name: 'Jun', value: 5500 }
   ];
 
-  // Sample product data
+  // Sample product data with improved data
   const products = [
     {
       id: '1',
-      name: 'Wireless Earbuds',
+      name: 'Wireless Earbuds Pro',
       price: 49.99,
-      comparePrice: null,
+      comparePrice: 69.99,
       source: 'AliExpress',
       rating: 4.5,
       trending: true,
       profit: 17.50,
-      category: 'Electronics',
-      image: '/placeholder.svg'
+      category: 'Electronics'
     },
     {
       id: '2',
-      name: 'Smart Watch',
+      name: 'Smart Watch Series 5',
       price: 129.99,
       comparePrice: 149.99,
       source: 'Amazon',
       rating: 4.7,
       trending: false,
       profit: 42.30,
-      category: 'Electronics',
-      image: '/placeholder.svg'
+      category: 'Electronics'
     },
     {
       id: '3',
-      name: 'Portable Charger',
+      name: 'Portable Charger 10000mAh',
       price: 34.99,
-      comparePrice: null,
+      comparePrice: 44.99,
       source: 'Shopify',
       rating: 4.2,
       trending: false,
       profit: 12.25,
-      category: 'Accessories',
-      image: '/placeholder.svg'
+      category: 'Electronics'
     }
   ];
 
@@ -112,6 +110,11 @@ function Dashboard() {
               />
             ))}
           </div>
+        </div>
+        
+        {/* Imported Products */}
+        <div className="mt-8">
+          <ImportedProducts />
         </div>
       </div>
     </MainLayout>

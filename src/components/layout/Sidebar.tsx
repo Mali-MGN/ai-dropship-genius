@@ -7,7 +7,8 @@ import {
   ShoppingCart,
   Sparkles,
   Bot,
-  ChevronLeft
+  ChevronLeft,
+  BarChart
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,11 @@ export const Sidebar = ({ id, className, open, onClose }: SidebarProps) => {
       label: "Dashboard",
     },
     {
+      href: "/analytics",
+      icon: BarChart,
+      label: "Analytics",
+    },
+    {
       href: "/product-discovery",
       icon: ShoppingCart,
       label: "Product Discovery",
@@ -42,12 +48,7 @@ export const Sidebar = ({ id, className, open, onClose }: SidebarProps) => {
     {
       href: "/ai-product-discovery",
       icon: Sparkles,
-      label: "AI Discovery",
-    },
-    {
-      href: "/ai-assistant",
-      icon: Bot,
-      label: "AI Assistant",
+      label: "AI Hub",
     },
     {
       href: "/settings",

@@ -13,9 +13,9 @@ import { ForgotPassword } from '@/pages/ForgotPassword';
 import Settings from '@/pages/Settings';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { VerifyEmail } from '@/pages/VerifyEmail';
-import AIAssistant from '@/pages/AIAssistant';
+import Analytics from '@/pages/Analytics';
+import AIHub from '@/pages/AIHub';
 import ProductDiscovery from '@/pages/ProductDiscovery';
-import AIProductDiscovery from '@/pages/AIProductDiscovery';
 
 function App() {
   return (
@@ -28,9 +28,10 @@ function App() {
           <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
           <Route path="/verify-email" element={<PublicRoute><VerifyEmail /></PublicRoute>} />
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/ai-assistant" element={<PrivateRoute><AIAssistant /></PrivateRoute>} />
+          <Route path="/analytics" element={<PrivateRoute><Analytics /></PrivateRoute>} />
+          <Route path="/ai-product-discovery" element={<PrivateRoute><AIHub /></PrivateRoute>} />
+          <Route path="/ai-assistant" element={<Navigate to="/ai-product-discovery" replace />} />
           <Route path="/product-discovery" element={<PrivateRoute><ProductDiscovery /></PrivateRoute>} />
-          <Route path="/ai-product-discovery" element={<PrivateRoute><AIProductDiscovery /></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
         </Routes>
       </AuthProvider>
