@@ -20,7 +20,12 @@ const Orders = () => {
           <OrdersTabs activeTab={activeTab} setActiveTab={setActiveTab} />
           
           <TabsContent value="orders" className="space-y-6">
-            <OrdersStats />
+            <OrdersStats 
+              newOrdersCount={152}
+              processingCount={87}
+              deliveredCount={243}
+              cancelledCount={18}
+            />
             <OrdersList />
           </TabsContent>
           
