@@ -17,13 +17,22 @@ export const AccountSidebar = ({ open, onClose }: AccountSidebarProps) => {
   const { toast } = useToast();
 
   const handleSignOut = async () => {
-    await signOut();
-    toast({
-      title: "Signed out successfully",
-      description: "You have been signed out of your account.",
-    });
-    navigate("/auth");
-    onClose();
+    try {
+      await signOut();
+      toast({
+        title: "Signed out successfully",
+        description: "You have been signed out of your account.",
+      });
+      navigate("/login");
+      onClose();
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive",
+      });
+    }
   };
 
   const accountMenuItems = [

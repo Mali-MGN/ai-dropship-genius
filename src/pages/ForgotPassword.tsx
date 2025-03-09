@@ -5,23 +5,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 export function ForgotPassword() {
   const [email, setEmail] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const [submitted, setSubmitted] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const { resetPassword } = useAuth();
   const { toast } = useToast();
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      const { error } = await resetPassword(email);
 
       if (error) throw error;
       
@@ -31,6 +34,8 @@ export function ForgotPassword() {
         description: 'Check your email for a password reset link',
       });
     } catch (error: any) {
+      console.error("Reset password error:", error);
+      setError(error.message || 'Failed to send password reset email');
       toast({
         title: 'Error',
         description: error.message || 'Failed to send password reset email',
@@ -51,6 +56,13 @@ export function ForgotPassword() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
           {submitted ? (
             <div className="text-center py-4">
               <h3 className="font-medium text-lg mb-2">Check your email</h3>

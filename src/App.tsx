@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   BrowserRouter as Router,
   Route,
@@ -18,6 +18,7 @@ import AIHub from '@/pages/AIHub';
 import ProductDiscovery from '@/pages/ProductDiscovery';
 import Orders from '@/pages/Orders';
 import { MainLayout } from './components/layout/MainLayout';
+import { Toaster } from './components/ui/toaster';
 
 // Placeholder Customers page
 const Customers = () => (
@@ -54,6 +55,7 @@ function App() {
           <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
         </Routes>
+        <Toaster />
       </AuthProvider>
     </Router>
   );
@@ -63,7 +65,11 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   
   if (loading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
   }
   
   return user ? <>{children}</> : <Navigate to="/login" />;
@@ -73,7 +79,11 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   
   if (loading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
   }
   
   return !user ? <>{children}</> : <Navigate to="/dashboard" />;
