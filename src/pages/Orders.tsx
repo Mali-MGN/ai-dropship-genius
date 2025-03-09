@@ -7,6 +7,7 @@ import { OrdersTabs } from "@/components/orders/OrdersTabs";
 import { OrdersStats } from "@/components/orders/OrdersStats";
 import { OrdersList } from "@/components/orders/OrdersList";
 import { FinancialStats } from "@/components/dashboard/FinancialStats";
+import { ImportedProducts } from "@/components/dashboard/ImportedProducts";
 
 const Orders = () => {
   const [activeTab, setActiveTab] = useState("orders");
@@ -26,6 +27,7 @@ const Orders = () => {
               deliveredCount={243}
               cancelledCount={18}
             />
+            <ImportedProducts />
             <OrdersList />
           </TabsContent>
           

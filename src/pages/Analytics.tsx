@@ -7,6 +7,7 @@ import { AnalyticsChart } from '@/components/dashboard/AnalyticsChart';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { StatCard } from '@/components/dashboard/StatCard';
+import { FinancialStats } from '@/components/dashboard/FinancialStats';
 import { 
   ArrowUpRight,
   DollarSign,
@@ -145,6 +146,9 @@ function Analytics() {
             icon={<ArrowUpRight className="h-4 w-4" />}
           />
         </div>
+        
+        {/* Financial Statistics (Moved from Dashboard) */}
+        <FinancialStats />
         
         {/* Chart Tabs */}
         <Tabs defaultValue="revenue" className="space-y-4">
