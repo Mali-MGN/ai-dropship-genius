@@ -1,14 +1,13 @@
-
 import React from "react";
 import {
-  Home,
   LayoutDashboard,
   Settings,
   ShoppingCart,
   Sparkles,
-  Bot,
-  ChevronLeft,
-  BarChart
+  BarChart,
+  Users,
+  Package,
+  ChevronLeft
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -26,19 +25,9 @@ interface SidebarProps {
 export const Sidebar = ({ id, className, open, onClose }: SidebarProps) => {
   const sidebarLinks = [
     {
-      href: "/",
-      icon: Home,
-      label: "Home",
-    },
-    {
       href: "/dashboard",
       icon: LayoutDashboard,
       label: "Dashboard",
-    },
-    {
-      href: "/analytics",
-      icon: BarChart,
-      label: "Analytics",
     },
     {
       href: "/product-discovery",
@@ -46,9 +35,24 @@ export const Sidebar = ({ id, className, open, onClose }: SidebarProps) => {
       label: "Product Discovery",
     },
     {
+      href: "/orders",
+      icon: Package,
+      label: "Orders",
+    },
+    {
       href: "/ai-product-discovery",
       icon: Sparkles,
       label: "AI Hub",
+    },
+    {
+      href: "/analytics",
+      icon: BarChart,
+      label: "Analytics",
+    },
+    {
+      href: "/customers",
+      icon: Users,
+      label: "Customers",
     },
     {
       href: "/settings",
@@ -91,13 +95,13 @@ export const Sidebar = ({ id, className, open, onClose }: SidebarProps) => {
               to={link.href}
               className={({ isActive }) =>
                 cn(
-                  "group flex w-full items-center space-x-3 rounded-md border-0 py-2 pl-6 pr-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+                  "group flex w-full items-center rounded-md border-0 py-2 pl-3 pr-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
                   isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"
                 )
               }
             >
-              <link.icon className="h-4 w-4" />
-              <span className={cn(!open && "md:hidden")}>{link.label}</span>
+              <link.icon className="h-5 w-5" />
+              <span className={cn("ml-3", !open && "md:hidden")}>{link.label}</span>
             </NavLink>
           ))}
         </div>

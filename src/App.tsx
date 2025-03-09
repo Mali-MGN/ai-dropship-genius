@@ -16,6 +16,24 @@ import { VerifyEmail } from '@/pages/VerifyEmail';
 import Analytics from '@/pages/Analytics';
 import AIHub from '@/pages/AIHub';
 import ProductDiscovery from '@/pages/ProductDiscovery';
+import Orders from '@/pages/Orders';
+import { MainLayout } from './components/layout/MainLayout';
+
+// Placeholder Customers page
+const Customers = () => (
+  <MainLayout>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Customers</h1>
+        <p className="text-muted-foreground">Manage your customer relationships</p>
+      </div>
+      <div className="border rounded-md p-8 text-center">
+        <h2 className="text-xl font-semibold mb-4">Coming Soon</h2>
+        <p className="text-muted-foreground">Customer management tools are currently under development.</p>
+      </div>
+    </div>
+  </MainLayout>
+);
 
 function App() {
   return (
@@ -32,6 +50,8 @@ function App() {
           <Route path="/ai-product-discovery" element={<PrivateRoute><AIHub /></PrivateRoute>} />
           <Route path="/ai-assistant" element={<Navigate to="/ai-product-discovery" replace />} />
           <Route path="/product-discovery" element={<PrivateRoute><ProductDiscovery /></PrivateRoute>} />
+          <Route path="/customers" element={<PrivateRoute><Customers /></PrivateRoute>} />
+          <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
         </Routes>
       </AuthProvider>
