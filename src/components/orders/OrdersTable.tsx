@@ -99,7 +99,8 @@ export const OrdersTable = () => {
         
         // Handle different types of changes
         if (payload.eventType === 'INSERT') {
-          setOrders(currentOrders => [payload.new, ...currentOrders]);
+          // Fetch the complete order with relations instead of using payload.new directly
+          fetchOrders();
         } 
         else if (payload.eventType === 'UPDATE') {
           setOrders(currentOrders => 
