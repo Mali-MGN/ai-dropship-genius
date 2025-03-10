@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -42,9 +41,12 @@ const getStatusBadge = (status: string) => {
     case 'pending':
       return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-200 dark:border-yellow-900">Pending</Badge>;
     case 'processing':
-      return <Badge className="bg-blue-500 text-white hover:bg-blue-600">Processing</Badge>;
+      return <Badge className="bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300 animate-pulse">Processing</Badge>;
     case 'shipped':
-      return <Badge className="bg-purple-500 text-white hover:bg-purple-600">Shipped</Badge>;
+      return <Badge className="bg-purple-500 text-white hover:bg-purple-600 relative">
+        <span className="relative z-10">Shipped</span>
+        <span className="absolute inset-0 bg-purple-400 animate-pulse rounded-full opacity-50"></span>
+      </Badge>;
     case 'delivered':
       return <Badge className="bg-green-500 text-white hover:bg-green-600">Delivered</Badge>;
     case 'cancelled':
@@ -78,6 +80,7 @@ const OrderDetails = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -130,7 +133,7 @@ const OrderDetails = () => {
     
     // Set up a realtime subscription for the specific order
     const channel = supabase
-      .channel(`public:user_orders:id=eq.${orderId}`)
+      .channel(`order-details-${orderId}`)
       .on('postgres_changes', { 
         event: 'UPDATE', 
         schema: 'public', 
@@ -138,19 +141,36 @@ const OrderDetails = () => {
         filter: `id=eq.${orderId}` 
       }, (payload) => {
         console.log('Order updated!', payload);
-        fetchOrderDetails();
+        
+        if (payload.old && payload.new && payload.old.status !== payload.new.status) {
+          // Show status change notification
+          toast({
+            title: "Order Status Updated",
+            description: `Status changed from ${payload.old.status} to ${payload.new.status}`,
+          });
+          
+          // Update the order with the new data
+          setOrder(current => current ? { ...current, ...payload.new } : null);
+        } else {
+          // For other updates, just refresh the data
+          fetchOrderDetails();
+        }
       })
       .subscribe();
     
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [orderId]);
+  }, [orderId, toast]);
 
   const updateOrderStatus = async (newStatus: string) => {
     if (!order) return;
     
+    setUpdating(true);
     try {
+      // Optimistic update
+      setOrder(current => current ? { ...current, status: newStatus } : null);
+      
       const { error } = await supabase.functions.invoke('update-order-status', {
         body: { orderId: order.id, newStatus },
       });
@@ -159,11 +179,8 @@ const OrderDetails = () => {
       
       toast({
         title: "Success",
-        description: "Order status updated",
+        description: `Order status updated to ${newStatus}`,
       });
-      
-      // Refresh the order details
-      fetchOrderDetails();
     } catch (error) {
       console.error('Error updating order:', error);
       toast({
@@ -171,6 +188,11 @@ const OrderDetails = () => {
         description: "Failed to update order status",
         variant: "destructive",
       });
+      
+      // Revert changes on error
+      fetchOrderDetails();
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -281,7 +303,8 @@ const OrderDetails = () => {
                         variant="outline" 
                         size="sm"
                         onClick={() => updateOrderStatus('processing')}
-                        disabled={order.status === 'processing'}
+                        disabled={updating || order.status === 'processing'}
+                        className={updating ? 'opacity-50' : ''}
                       >
                         <PackageOpen className="mr-2 h-4 w-4" />
                         Mark as Processing
@@ -290,7 +313,8 @@ const OrderDetails = () => {
                         variant="outline" 
                         size="sm"
                         onClick={() => updateOrderStatus('shipped')}
-                        disabled={order.status === 'shipped'}
+                        disabled={updating || order.status === 'shipped'}
+                        className={updating ? 'opacity-50' : ''}
                       >
                         <Truck className="mr-2 h-4 w-4" />
                         Mark as Shipped
@@ -299,7 +323,8 @@ const OrderDetails = () => {
                         variant="outline" 
                         size="sm"
                         onClick={() => updateOrderStatus('delivered')}
-                        disabled={order.status === 'delivered'}
+                        disabled={updating || order.status === 'delivered'}
+                        className={updating ? 'opacity-50' : ''}
                       >
                         <ExternalLink className="mr-2 h-4 w-4" />
                         Mark as Delivered
@@ -308,7 +333,8 @@ const OrderDetails = () => {
                         variant="outline" 
                         size="sm"
                         onClick={() => updateOrderStatus('cancelled')}
-                        disabled={order.status === 'cancelled'}
+                        disabled={updating || order.status === 'cancelled'}
+                        className={updating ? 'opacity-50' : ''}
                       >
                         Cancel Order
                       </Button>

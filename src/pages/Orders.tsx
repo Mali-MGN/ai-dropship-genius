@@ -20,6 +20,7 @@ const Orders = () => {
     deliveredCount: 0,
     cancelledCount: 0
   });
+  const [notifications, setNotifications] = useState([]);
   const { toast } = useToast();
   
   // Fetch order statistics when the component mounts
@@ -45,12 +46,29 @@ const Orders = () => {
         console.error('Error fetching order stats:', error);
       }
     };
+
+    // Fetch recent notifications
+    const fetchNotifications = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5);
+        
+        if (error) throw error;
+        setNotifications(data || []);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    };
     
     fetchOrderStats();
+    fetchNotifications();
     
     // Set up real-time subscription for orders table
-    const channel = supabase
-      .channel('public:user_orders')
+    const ordersChannel = supabase
+      .channel('orders-channel')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
@@ -65,15 +83,38 @@ const Orders = () => {
           if (payload.new.status !== payload.old.status) {
             toast({
               title: "Order Status Updated",
-              description: `Order #${payload.new.order_id} status changed to ${payload.new.status}`,
+              description: `Order #${payload.new.order_id} status changed from ${payload.old.status} to ${payload.new.status}`,
             });
           }
         }
       })
       .subscribe();
+
+    // Set up real-time subscription for notifications
+    const notificationsChannel = supabase
+      .channel('notifications-channel')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications'
+      }, (payload) => {
+        console.log('New notification received!', payload);
+        if (payload.new) {
+          // Add the new notification to the state
+          setNotifications(prev => [payload.new, ...prev.slice(0, 4)]);
+          
+          // Show a toast for the new notification
+          toast({
+            title: payload.new.title,
+            description: payload.new.message,
+          });
+        }
+      })
+      .subscribe();
     
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(notificationsChannel);
     };
   }, [toast]);
   

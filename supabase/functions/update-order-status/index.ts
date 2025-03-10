@@ -55,8 +55,32 @@ serve(async (req) => {
       )
     }
 
-    // In a real implementation, we would fetch the order status from the retailer's API
-    // For now, we'll just update our database
+    // Get the current order status to create a more informative notification
+    const { data: currentOrder, error: fetchError } = await supabaseClient
+      .from('user_orders')
+      .select('order_id, status')
+      .eq('id', orderId)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching current order status:', fetchError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch order details', details: fetchError }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      )
+    }
+
+    // Skip update if status hasn't changed
+    if (currentOrder.status === newStatus) {
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Order status is already set to this value', 
+          order: currentOrder 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      )
+    }
     
     // Update the order in the database
     const { data: order, error: orderError } = await supabaseClient
@@ -78,13 +102,14 @@ serve(async (req) => {
       )
     }
 
-    // Send a notification about the status change
+    // Create a notification about the status change
+    const notificationMessage = `Order #${order.order_id} status changed from ${currentOrder.status} to ${newStatus}`;
     const { error: notificationError } = await supabaseClient
       .from('notifications')
       .insert({
         user_id: user.id,
         title: `Order ${order.order_id} Status Updated`,
-        message: `Order status has been changed to ${newStatus}`,
+        message: notificationMessage,
         type: 'order_status',
         reference_id: orderId,
         is_read: false

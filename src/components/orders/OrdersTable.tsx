@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -87,38 +88,40 @@ export const OrdersTable = () => {
     
     // Set up a realtime subscription for orders
     const channel = supabase
-      .channel('public:user_orders')
+      .channel('orders-table-changes')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'user_orders',
         filter: user ? `user_id=eq.${user.id}` : undefined
       }, (payload) => {
-        console.log('Change received!', payload);
+        console.log('Order table change received!', payload);
         
-        // Optimistic update for better UX
-        if (payload.eventType === 'UPDATE' && payload.new) {
+        // Handle different types of changes
+        if (payload.eventType === 'INSERT') {
+          setOrders(currentOrders => [payload.new, ...currentOrders]);
+        } 
+        else if (payload.eventType === 'UPDATE') {
           setOrders(currentOrders => 
             currentOrders.map(order => 
               order.id === payload.new.id 
-                ? { ...order, status: payload.new.status } 
+                ? { ...order, ...payload.new } 
                 : order
             )
           );
           
           // Show a toast notification for status changes
           if (payload.old && payload.new.status !== payload.old.status) {
-            const orderDetails = orders.find(o => o.id === payload.new.id);
-            if (orderDetails) {
-              toast({
-                title: `Order #${orderDetails.order_id} Updated`,
-                description: `Status changed from ${payload.old.status} to ${payload.new.status}`,
-              });
-            }
+            toast({
+              title: `Order #${payload.new.order_id} Updated`,
+              description: `Status changed from ${payload.old.status} to ${payload.new.status}`,
+            });
           }
-        } else {
-          // For other types of changes (INSERT, DELETE), fetch the full list again
-          fetchOrders();
+        } 
+        else if (payload.eventType === 'DELETE') {
+          setOrders(currentOrders => 
+            currentOrders.filter(order => order.id !== payload.old.id)
+          );
         }
       })
       .subscribe();
@@ -167,9 +170,12 @@ export const OrdersTable = () => {
       case 'pending':
         return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-200 dark:border-yellow-900">Pending</Badge>;
       case 'processing':
-        return <Badge className="bg-blue-500 text-white hover:bg-blue-600">Processing</Badge>;
+        return <Badge className="bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300 animate-pulse">Processing</Badge>;
       case 'shipped':
-        return <Badge className="bg-purple-500 text-white hover:bg-purple-600">Shipped</Badge>;
+        return <Badge className="bg-purple-500 text-white hover:bg-purple-600 relative">
+          <span className="relative z-10">Shipped</span>
+          <span className="absolute inset-0 bg-purple-400 animate-pulse rounded-full opacity-50"></span>
+        </Badge>;
       case 'delivered':
         return <Badge className="bg-green-500 text-white hover:bg-green-600">Delivered</Badge>;
       case 'cancelled':
@@ -235,16 +241,7 @@ export const OrdersTable = () => {
               <TableCell>{formatCurrency(order.amount)}</TableCell>
               <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
               <TableCell>
-                {order.status === 'processing' ? (
-                  <Badge className="bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300 animate-pulse">
-                    Processing
-                  </Badge>
-                ) : order.status === 'shipped' ? (
-                  <Badge className="bg-purple-500 text-white hover:bg-purple-600 relative">
-                    <span className="relative z-10">Shipped</span>
-                    <span className="absolute inset-0 bg-purple-400 animate-pulse rounded-full opacity-50"></span>
-                  </Badge>
-                ) : getStatusBadge(order.status)}
+                {getStatusBadge(order.status)}
               </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
@@ -268,24 +265,28 @@ export const OrdersTable = () => {
                     {/* Status update options */}
                     <DropdownMenuItem 
                       onClick={() => updateOrderStatus(order.id, 'processing')}
+                      disabled={order.status === 'processing'}
                       className="cursor-pointer"
                     >
                       Mark as Processing
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={() => updateOrderStatus(order.id, 'shipped')}
+                      disabled={order.status === 'shipped'}
                       className="cursor-pointer"
                     >
                       Mark as Shipped
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={() => updateOrderStatus(order.id, 'delivered')}
+                      disabled={order.status === 'delivered'}
                       className="cursor-pointer"
                     >
                       Mark as Delivered
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={() => updateOrderStatus(order.id, 'cancelled')}
+                      disabled={order.status === 'cancelled'}
                       className="cursor-pointer"
                     >
                       Mark as Cancelled
@@ -299,24 +300,4 @@ export const OrdersTable = () => {
       </Table>
     </div>
   );
-};
-
-// Function for getting status badges
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case 'pending':
-      return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-200 dark:border-yellow-900">Pending</Badge>;
-    case 'processing':
-      return <Badge className="bg-blue-500 text-white hover:bg-blue-600">Processing</Badge>;
-    case 'shipped':
-      return <Badge className="bg-purple-500 text-white hover:bg-purple-600">Shipped</Badge>;
-    case 'delivered':
-      return <Badge className="bg-green-500 text-white hover:bg-green-600">Delivered</Badge>;
-    case 'cancelled':
-      return <Badge className="bg-red-500 text-white hover:bg-red-600">Cancelled</Badge>;
-    case 'refunded':
-      return <Badge className="bg-yellow-500 text-black hover:bg-yellow-600">Refunded</Badge>;
-    default:
-      return null;
-  }
 };
