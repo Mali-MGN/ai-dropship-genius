@@ -78,6 +78,23 @@ serve(async (req) => {
       )
     }
 
+    // Send a notification about the status change
+    const { error: notificationError } = await supabaseClient
+      .from('notifications')
+      .insert({
+        user_id: user.id,
+        title: `Order ${order.order_id} Status Updated`,
+        message: `Order status has been changed to ${newStatus}`,
+        type: 'order_status',
+        reference_id: orderId,
+        is_read: false
+      })
+
+    if (notificationError) {
+      console.error('Failed to create notification:', notificationError);
+      // Continue execution - non-critical error
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 

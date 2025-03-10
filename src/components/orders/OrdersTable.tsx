@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -93,20 +92,53 @@ export const OrdersTable = () => {
         event: '*', 
         schema: 'public', 
         table: 'user_orders',
-        filter: `user_id=eq.${user?.id}` 
+        filter: user ? `user_id=eq.${user.id}` : undefined
       }, (payload) => {
         console.log('Change received!', payload);
-        fetchOrders();
+        
+        // Optimistic update for better UX
+        if (payload.eventType === 'UPDATE' && payload.new) {
+          setOrders(currentOrders => 
+            currentOrders.map(order => 
+              order.id === payload.new.id 
+                ? { ...order, status: payload.new.status } 
+                : order
+            )
+          );
+          
+          // Show a toast notification for status changes
+          if (payload.old && payload.new.status !== payload.old.status) {
+            const orderDetails = orders.find(o => o.id === payload.new.id);
+            if (orderDetails) {
+              toast({
+                title: `Order #${orderDetails.order_id} Updated`,
+                description: `Status changed from ${payload.old.status} to ${payload.new.status}`,
+              });
+            }
+          }
+        } else {
+          // For other types of changes (INSERT, DELETE), fetch the full list again
+          fetchOrders();
+        }
       })
       .subscribe();
     
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, toast]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
+      // Optimistic update for better UX
+      setOrders(currentOrders => 
+        currentOrders.map(order => 
+          order.id === orderId 
+            ? { ...order, status: newStatus } 
+            : order
+        )
+      );
+      
       const { error } = await supabase.functions.invoke('update-order-status', {
         body: { orderId, newStatus },
       });
@@ -117,9 +149,6 @@ export const OrdersTable = () => {
         title: "Success",
         description: "Order status updated",
       });
-      
-      // Refresh the orders list
-      fetchOrders();
     } catch (error) {
       console.error('Error updating order:', error);
       toast({
@@ -127,6 +156,9 @@ export const OrdersTable = () => {
         description: "Failed to update order status",
         variant: "destructive",
       });
+      
+      // Revert to original data if there was an error
+      fetchOrders();
     }
   };
 
@@ -195,14 +227,25 @@ export const OrdersTable = () => {
         </TableHeader>
         <TableBody>
           {orders.map((order) => (
-            <TableRow key={order.id}>
+            <TableRow key={order.id} className="group">
               <TableCell className="font-medium">{order.order_id}</TableCell>
               <TableCell>{order.product?.name}</TableCell>
               <TableCell>{order.customer_name}</TableCell>
               <TableCell>{order.retailer?.name}</TableCell>
               <TableCell>{formatCurrency(order.amount)}</TableCell>
               <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
-              <TableCell>{getStatusBadge(order.status)}</TableCell>
+              <TableCell>
+                {order.status === 'processing' ? (
+                  <Badge className="bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300 animate-pulse">
+                    Processing
+                  </Badge>
+                ) : order.status === 'shipped' ? (
+                  <Badge className="bg-purple-500 text-white hover:bg-purple-600 relative">
+                    <span className="relative z-10">Shipped</span>
+                    <span className="absolute inset-0 bg-purple-400 animate-pulse rounded-full opacity-50"></span>
+                  </Badge>
+                ) : getStatusBadge(order.status)}
+              </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -256,4 +299,24 @@ export const OrdersTable = () => {
       </Table>
     </div>
   );
+};
+
+// Function for getting status badges
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case 'pending':
+      return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-200 dark:border-yellow-900">Pending</Badge>;
+    case 'processing':
+      return <Badge className="bg-blue-500 text-white hover:bg-blue-600">Processing</Badge>;
+    case 'shipped':
+      return <Badge className="bg-purple-500 text-white hover:bg-purple-600">Shipped</Badge>;
+    case 'delivered':
+      return <Badge className="bg-green-500 text-white hover:bg-green-600">Delivered</Badge>;
+    case 'cancelled':
+      return <Badge className="bg-red-500 text-white hover:bg-red-600">Cancelled</Badge>;
+    case 'refunded':
+      return <Badge className="bg-yellow-500 text-black hover:bg-yellow-600">Refunded</Badge>;
+    default:
+      return null;
+  }
 };
