@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,15 +9,10 @@ import { RecentSales } from "@/components/dashboard/RecentSales";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  ArrowDown,
-  ArrowUp,
   Users,
   ShoppingCart,
   DollarSign,
   Package,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
   Loader2
 } from "lucide-react";
 
@@ -37,18 +33,28 @@ const Dashboard = () => {
       try {
         setLoading(true);
 
-        // Fetch total users
-        const { data: users, error: usersError } = await supabase
-          .from('profiles')
-          .select('id', { count: 'exact' });
+        // Fetch total users - using auth.users instead of profiles table
+        const { count: userCount, error: usersError } = await supabase
+          .from('auth.users')
+          .select('*', { count: 'exact', head: true });
 
-        if (usersError) throw usersError;
-        setTotalUsers(users?.length || 0);
+        if (usersError) {
+          console.error("Error fetching users:", usersError);
+          // Fallback to a simpler query without count if the first one fails
+          const { data: usersData, error: usersDataError } = await supabase
+            .from('user_preferences')
+            .select('user_id');
+          
+          if (usersDataError) throw usersDataError;
+          setTotalUsers(usersData?.length || 0);
+        } else {
+          setTotalUsers(userCount || 0);
+        }
 
         // Fetch total orders
         const { data: orders, error: ordersError } = await supabase
           .from('user_orders')
-          .select('id', { count: 'exact' });
+          .select('id');
 
         if (ordersError) throw ordersError;
         setTotalOrders(orders?.length || 0);
@@ -56,14 +62,14 @@ const Dashboard = () => {
         // Fetch total revenue
         const { data: revenue, error: revenueError } = await supabase
           .from('user_orders')
-          .select('total_amount');
+          .select('amount');
 
         if (revenueError) throw revenueError;
-        const totalRevenueValue = revenue?.reduce((acc, order) => acc + (order.total_amount || 0), 0) || 0;
+        const totalRevenueValue = revenue?.reduce((acc, order) => acc + (order.amount || 0), 0) || 0;
         setTotalRevenue(totalRevenueValue);
 
-        // Fetch average order value
-        const averageValue = totalOrders ? totalRevenueValue / totalOrders : 0;
+        // Calculate average order value
+        const averageValue = orders?.length ? totalRevenueValue / orders.length : 0;
         setAverageOrderValue(averageValue);
 
         // Fetch previous month's data for comparison
@@ -71,10 +77,10 @@ const Dashboard = () => {
         const lastMonthStartDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
         const lastMonthEndDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
 
-        // Fetch previous month's users
+        // Fetch previous month's users (using a simpler approach)
         const { data: prevUsers, error: prevUsersError } = await supabase
-          .from('profiles')
-          .select('id', { count: 'exact' })
+          .from('user_preferences')
+          .select('user_id')
           .gte('created_at', lastMonthStartDate.toISOString())
           .lte('created_at', lastMonthEndDate.toISOString());
 
@@ -83,7 +89,7 @@ const Dashboard = () => {
         // Fetch previous month's orders
         const { data: prevOrders, error: prevOrdersError } = await supabase
           .from('user_orders')
-          .select('id', { count: 'exact' })
+          .select('id')
           .gte('created_at', lastMonthStartDate.toISOString())
           .lte('created_at', lastMonthEndDate.toISOString());
 
@@ -92,19 +98,21 @@ const Dashboard = () => {
         // Fetch previous month's revenue
         const { data: prevRevenue, error: prevRevenueError } = await supabase
           .from('user_orders')
-          .select('total_amount')
+          .select('amount')
           .gte('created_at', lastMonthStartDate.toISOString())
           .lte('created_at', lastMonthEndDate.toISOString());
 
         if (prevRevenueError) console.error("Error fetching previous month's revenue:", prevRevenueError);
 
-        const prevTotalRevenueValue = prevRevenue?.reduce((acc, order) => acc + (order.total_amount || 0), 0) || 0;
+        const prevTotalRevenueValue = prevRevenue?.reduce((acc, order) => acc + (order.amount || 0), 0) || 0;
         const prevTotalOrders = prevOrders?.length || 0;
         const prevAverageOrderValue = prevTotalOrders ? prevTotalRevenueValue / prevTotalOrders : 0;
 
         // Calculate percentage changes
-        setNewUsersPercentageChange(calculatePercentageChange(users?.length || 0, prevUsers?.length || 0));
-        setNewOrdersPercentageChange(calculatePercentageChange(orders?.length || 0, prevOrders || 0));
+        const currentUsers = totalUsers || 0;
+        const previousMonthUsers = prevUsers?.length || 0;
+        setNewUsersPercentageChange(calculatePercentageChange(currentUsers, previousMonthUsers));
+        setNewOrdersPercentageChange(calculatePercentageChange(orders?.length || 0, prevTotalOrders));
         setNewRevenuePercentageChange(calculatePercentageChange(totalRevenueValue, prevTotalRevenueValue));
         setNewAOVPercentageChange(calculatePercentageChange(averageValue, prevAverageOrderValue));
 

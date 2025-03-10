@@ -1,620 +1,583 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { ProductCard } from "@/components/dashboard/ProductCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
-import { Toaster } from "@/components/ui/toaster";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  Search, 
-  Filter, 
-  TrendingUp, 
-  ShoppingCart, 
-  Zap, 
-  BarChart, 
-  Archive,
-  Users,
-  ShoppingBag,
-  Star,
-  Eye,
-  Import,
-  RefreshCcw,
-  Loader
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { cn } from "@/lib/utils";
+import { CalendarIcon, CheckCheck, Copy, CopyCheckIcon, Filter, Funnel, GripVertical, Heart, Import, MoreHorizontal, Search, Share2, Star } from "lucide-react";
+import { format } from "date-fns";
+import { DateRange } from "react-day-picker";
+import { useAuth } from "@/context/AuthContext";
+import {
+  Megaphone,
+  BarChart,
+  Target,
+  Settings
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-interface Product {
+interface ProductData {
   id: string;
   name: string;
-  image?: string;
+  description: string;
   price: number;
-  comparePrice?: number;
-  source: string;
-  rating?: number;
-  trending?: boolean;
-  profit?: number;
-  category?: string;
-  image_url?: string;
-  is_trending?: boolean;
-  compare_price?: number;
-  review_count?: number;
-  product_url?: string;
-  competitors?: number;
+  imageUrl: string;
+  category: string;
+  supplier: string;
+  popularity: number;
+  profitMargin: number;
+  cost: number;
+  shippingCost: number;
+  rating: number;
+  unitsSold: number;
+  inventoryLevel: number;
+  manufacturingCost: number;
+  marketingSpend: number;
+  customerSatisfaction: number;
+  riskScore: number;
+  opportunityScore: number;
 }
 
 const ProductDiscovery = () => {
-  const [selectedTab, setSelectedTab] = useState("trending");
-  const [priceRange, setPriceRange] = useState([0, 100]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedSources, setSelectedSources] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState("trending");
+  const [products, setProducts] = useState<ProductData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(false);
-  const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
-  const [competitorProducts, setCompetitorProducts] = useState<Product[]>([]);
-  const [highProfitProducts, setHighProfitProducts] = useState<Product[]>([]);
+    const [categoryFilter, setCategoryFilter] = useState("");
+    const [supplierFilter, setSupplierFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortBy, setSortBy] = useState<keyof ProductData>("popularity");
+  const [showFilters, setShowFilters] = useState(false);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [date, setDate] = useState<DateRange | undefined>({
+    from: new Date(2023, 0, 1),
+    to: new Date(),
+  })
+  const [isImporting, setIsImporting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const categories = ["Electronics", "Fashion", "Home & Kitchen", "Beauty", "Toys & Games", "Sports & Outdoors", "Health & Personal Care"];
-  const sources = ["AliExpress", "Amazon", "eBay", "Etsy", "Shopify"];
-  
   useEffect(() => {
-    // Load initial products
-    fetchProducts();
-    
-    // Set up real-time subscription for new scraped products
-    const productsChannel = supabase
-      .channel('scraped-products-changes')
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'scraped_products'
-      }, (payload) => {
-        console.log('New product added:', payload);
-        if (payload.new) {
-          // Add the new product to the appropriate lists
-          const newProduct = formatProduct(payload.new);
-          
-          if (newProduct.is_trending) {
-            setTrendingProducts(prev => [newProduct, ...prev].slice(0, 20));
-          }
-          
-          if (newProduct.profit && newProduct.profit > 15) {
-            setHighProfitProducts(prev => [newProduct, ...prev.filter(p => p.id !== newProduct.id)].sort((a, b) => (b.profit || 0) - (a.profit || 0)).slice(0, 20));
-          }
-          
-          if (newProduct.competitors && newProduct.competitors > 5) {
-            setCompetitorProducts(prev => [newProduct, ...prev.filter(p => p.id !== newProduct.id)].slice(0, 20));
-          }
-        }
-      })
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(productsChannel);
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from("products")
+          .select("*");
+
+        if (error) throw error;
+        setProducts(data);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch products. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
     };
+
+    fetchProducts();
   }, []);
 
-  const fetchProducts = async () => {
-    setIsLoading(true);
-    try {
-      // Fetch scraped products from the database
-      const { data: scrapedProducts, error } = await supabase
-        .from('scraped_products')
-        .select('*')
-        .order('updated_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      if (scrapedProducts && scrapedProducts.length > 0) {
-        const formattedProducts = scrapedProducts.map(formatProduct);
-        
-        // Filter trending products
-        const trending = formattedProducts.filter(p => p.is_trending).slice(0, 20);
-        setTrendingProducts(trending);
-        
-        // Filter high profit products
-        const highProfit = [...formattedProducts]
-          .sort((a, b) => (b.profit || 0) - (a.profit || 0))
-          .slice(0, 20);
-        setHighProfitProducts(highProfit);
-        
-        // Filter competitor products
-        const competitor = formattedProducts.filter(p => p.competitors && p.competitors > 5).slice(0, 20);
-        setCompetitorProducts(competitor);
-      } else {
-        // If no products in database, generate initial products
-        await fetchProductsFromWeb();
-      }
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      toast({
-        title: "Error fetching products",
-        description: "Failed to load products from the database.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+  const filteredProducts = products.filter((product) => {
+    const searchRegex = new RegExp(searchQuery, "i");
+    const categoryMatch = categoryFilter ? product.category === categoryFilter : true;
+        const supplierMatch = supplierFilter ? product.supplier === supplierFilter : true;
+    const priceMatch = product.price >= priceRange[0] && product.price <= priceRange[1];
+
+    return (
+      searchRegex.test(product.name) &&
+            categoryMatch &&
+            supplierMatch &&
+      priceMatch
+    );
+  });
+
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    const order = sortOrder === "asc" ? 1 : -1;
+
+    if (typeof a[sortBy] === "number" && typeof b[sortBy] === "number") {
+      return order * ((a[sortBy] as number) - (b[sortBy] as number));
+    } else if (typeof a[sortBy] === "string" && typeof b[sortBy] === "string") {
+      return order * a[sortBy].localeCompare(b[sortBy]);
+    } else {
+      return 0;
     }
+  });
+
+  const handleCopyClick = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+
+    if (copyTimeoutRef.current) {
+      clearTimeout(copyTimeoutRef.current);
+    }
+
+    copyTimeoutRef.current = setTimeout(() => {
+      setCopied(false);
+    }, 2000);
   };
 
-  const formatProduct = (product: any): Product => {
-    return {
-      id: product.id,
-      name: product.name,
-      image: product.image_url,
-      price: product.price,
-      comparePrice: product.compare_price,
-      source: product.source,
-      rating: product.rating,
-      trending: product.is_trending,
-      profit: product.profit_margin,
-      category: product.category,
-      image_url: product.image_url,
-      is_trending: product.is_trending,
-      compare_price: product.compare_price,
-      review_count: product.review_count,
-      product_url: product.product_url,
-      competitors: product.competitors
+  const handlePriceRangeChange = (value: number[]) => {
+    setPriceRange([value[0], value[1]]);
+  };
+
+  const handleDateChange = (newDate: DateRange | undefined) => {
+    setDate(newDate);
+  };
+
+  const handleToggleFilters = () => {
+    setShowFilters(!showFilters);
+  };
+
+  const handleClearFilters = () => {
+        setCategoryFilter("");
+        setSupplierFilter("");
+    setPriceRange([0, 1000]);
+    setDate(undefined);
+  };
+
+  const handleCategoryFilterChange = (category: string) => {
+        setCategoryFilter(category);
     };
+
+    const handleSupplierFilterChange = (supplier: string) => {
+        setSupplierFilter(supplier);
+    };
+
+  const handleSortChange = (newSortBy: keyof ProductData) => {
+    if (newSortBy === sortBy) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(newSortBy);
+      setSortOrder("asc");
+    }
   };
 
-  const fetchProductsFromWeb = async (source?: string, category?: string) => {
-    setIsFetching(true);
-    try {
-      // Call the web-scraper edge function
-      const { data, error } = await supabase.functions.invoke('web-scraper', {
-        body: { 
-          source: source || sources[Math.floor(Math.random() * sources.length)],
-          category: category || (selectedCategories.length > 0 ? selectedCategories[0] : undefined),
-          searchQuery: searchQuery || undefined,
-          limit: 20
-        }
-      });
-      
-      if (error) throw error;
-      
-      if (data && data.success) {
-        toast({
-          title: "Products Scraped",
-          description: `Successfully scraped ${data.products.length} products`,
+  const handleShareProduct = (product: ProductData) => {
+    const shareData = {
+      title: product.name,
+      text: product.description,
+      url: product.imageUrl,
+    };
+
+    if (navigator.share) {
+      navigator
+        .share(shareData)
+        .then(() => {
+          toast({
+            title: "Product shared!",
+            description: `You have successfully shared ${product.name}`,
+          });
+        })
+        .catch((error) => {
+          console.error("Error sharing product:", error);
+          toast({
+            title: "Error sharing product",
+            description: "There was an error sharing the product.",
+            variant: "destructive",
+          });
         });
-        
-        // Products will be automatically updated via the subscription
-      } else {
-        throw new Error('Failed to fetch products from web');
-      }
-    } catch (error) {
-      console.error('Error fetching products from web:', error);
+    } else {
       toast({
-        title: "Error Scraping Products",
-        description: "Failed to scrape products from the web.",
+        title: "Share API not supported",
+        description: "Your browser does not support the Share API.",
         variant: "destructive",
       });
-    } finally {
-      setIsFetching(false);
     }
   };
 
-  const handleImportProduct = (id: string) => {
-    toast({
-      title: "Product Imported",
-      description: "The product has been added to your store.",
-    });
-    return true;
-  };
+  const handleSaveToWishlist = async (product: ProductData) => {
+    try {
+      setIsSaving(true);
+      // Simulate saving to wishlist
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  const handleBulkImport = () => {
-    if (selectedProducts.length === 0) {
       toast({
-        title: "No Products Selected",
-        description: "Please select at least one product to import.",
-        variant: "destructive",
+        title: "Added to wishlist",
+        description: "Product has been added to your wishlist",
       });
+      
       return;
+    } catch (error) {
+      console.error("Error saving to wishlist:", error);
+      
+      toast({
+        title: "Failed to add product",
+        description: "There was an error adding the product to your wishlist",
+        variant: "destructive",
+      });
+      
+      return;
+    } finally {
+      setIsSaving(false);
     }
-
-    toast({
-      title: `${selectedProducts.length} Products Imported`,
-      description: "The selected products have been added to your store.",
-    });
-    setSelectedProducts([]);
   };
 
-  const toggleProductSelection = (id: string) => {
-    setSelectedProducts(prev => 
-      prev.includes(id) 
-        ? prev.filter(productId => productId !== id) 
-        : [...prev, id]
-    );
+  const handleImportProduct = async (product: ProductData) => {
+    try {
+      setIsImporting(true);
+      // Simulate importing product
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      toast({
+        title: "Product imported",
+        description: "Product has been added to your store",
+      });
+      
+      return;
+    } catch (error) {
+      console.error("Error importing product:", error);
+      
+      toast({
+        title: "Failed to import product",
+        description: "There was an error importing the product to your store",
+        variant: "destructive",
+      });
+      
+      return;
+    } finally {
+      setIsImporting(false);
+    }
   };
 
-  const refreshProducts = async () => {
-    const randomSource = sources[Math.floor(Math.random() * sources.length)];
-    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-    await fetchProductsFromWeb(randomSource, randomCategory);
-  };
-
-  const getFilteredProducts = (products: Product[]) => {
-    let filtered = [...products];
-    
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(product => 
-        product.name.toLowerCase().includes(query) || 
-        (product.category && product.category.toLowerCase().includes(query))
-      );
-    }
-    
-    // Filter by price range
-    filtered = filtered.filter(product => 
-      product.price >= priceRange[0] && product.price <= priceRange[1]
-    );
-    
-    // Filter by selected categories
-    if (selectedCategories.length > 0) {
-      filtered = filtered.filter(product => 
-        product.category && selectedCategories.includes(product.category)
-      );
-    }
-    
-    // Filter by selected sources
-    if (selectedSources.length > 0) {
-      filtered = filtered.filter(product => 
-        selectedSources.includes(product.source)
-      );
-    }
-    
-    return filtered;
-  };
-
-  const filteredTrending = getFilteredProducts(trendingProducts);
-  const filteredHighProfit = getFilteredProducts(highProfitProducts);
-  const filteredCompetitor = getFilteredProducts(competitorProducts);
+  const categories = [...new Set(products.map((product) => product.category))];
+    const suppliers = [...new Set(products.map((product) => product.supplier))];
 
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center gap-2 justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Product Discovery</h1>
-            <p className="text-muted-foreground text-lg">Find trending products to sell in your store</p>
-          </div>
-          <Button 
-            onClick={refreshProducts} 
-            className="gap-2"
-            disabled={isFetching}
-          >
-            {isFetching ? <Loader className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
-            {isFetching ? "Fetching..." : "Refresh Products"}
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-semibold tracking-tight">Product Discovery</h1>
+          <p className="text-muted-foreground text-lg">Discover trending products and analyze market opportunities</p>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <Input
+            type="search"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-md"
+          />
+
+          <Button variant="outline" onClick={handleToggleFilters}>
+            <Filter className="mr-2 h-4 w-4" />
+            Filters
           </Button>
         </div>
 
-        {/* Search and Filter */}
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search products..." 
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Select
-              onValueChange={(value) => {
-                setSelectedCategories(value ? [value] : []);
-              }}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
-                {categories.map(category => (
-                  <SelectItem key={category} value={category}>{category}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              onValueChange={(value) => {
-                setSelectedSources(value ? [value] : []);
-              }}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Sources" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All Sources</SelectItem>
-                {sources.map(source => (
-                  <SelectItem key={source} value={source}>{source}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" className="gap-2">
-              <Filter className="h-4 w-4" />
-              Filter
-            </Button>
-          </div>
-        </div>
+        {showFilters && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Filters</CardTitle>
+              <CardDescription>Apply filters to narrow down your product search</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                                <Select onValueChange={handleCategoryFilterChange}>
+                                        <SelectTrigger className="w-[180px]">
+                                                <SelectValue placeholder="Select category" defaultValue={categoryFilter} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                                <SelectItem value="">All Categories</SelectItem>
+                                                {categories.map((category) => (
+                                                        <SelectItem key={category} value={category}>
+                                                                {category}
+                                                        </SelectItem>
+                                                ))}
+                                        </SelectContent>
+                                </Select>
+              </div>
+                            <div className="space-y-2">
+                                    <Label htmlFor="supplier">Supplier</Label>
+                                    <Select onValueChange={handleSupplierFilterChange}>
+                                            <SelectTrigger className="w-[180px]">
+                                                    <SelectValue placeholder="Select supplier" defaultValue={supplierFilter} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                    <SelectItem value="">All Suppliers</SelectItem>
+                                                    {suppliers.map((supplier) => (
+                                                            <SelectItem key={supplier} value={supplier}>
+                                                                    {supplier}
+                                                            </SelectItem>
+                                                    ))}
+                                            </SelectContent>
+                                    </Select>
+                            </div>
+              <div className="space-y-2">
+                <Label htmlFor="price-range">Price Range</Label>
+                <Slider
+                  id="price-range"
+                  defaultValue={priceRange}
+                  max={1000}
+                  step={10}
+                  onValueChange={handlePriceRangeChange}
+                />
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>${priceRange[0]}</span>
+                  <span>${priceRange[1]}</span>
+                </div>
+              </div>
 
-        {/* Advanced Filters Card */}
-        <Card>
-          <CardHeader className="py-4">
-            <CardTitle className="text-lg">Advanced Filters</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Price Range */}
-              <div>
-                <h3 className="font-medium mb-3">Price Range</h3>
-                <div className="space-y-6">
-                  <Slider 
-                    defaultValue={[0, 100]} 
-                    max={100} 
-                    step={1} 
-                    value={priceRange}
-                    onValueChange={setPriceRange}
-                  />
-                  <div className="flex items-center justify-between">
-                    <span>${priceRange[0]}</span>
-                    <span>${priceRange[1]}</span>
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <Label>Date Range</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-[280px] justify-start text-left font-normal",
+                        !date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date?.from ? (
+                        date.to ? (
+                          `${format(date.from, "LLL dd, y")} - ${format(date.to, "LLL dd, y")}`
+                        ) : (
+                          format(date.from, "LLL dd, y")
+                        )
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="center">
+                    <Calendar
+                      mode="range"
+                      defaultMonth={date?.from}
+                      selected={date}
+                      onSelect={handleDateChange}
+                      numberOfMonths={2}
+                      pagedNavigation
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
-              
-              {/* Category Checkboxes */}
-              <div>
-                <h3 className="font-medium mb-3">Categories</h3>
-                <div className="space-y-2">
-                  {categories.slice(0, 4).map(category => (
-                    <div key={category} className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={`category-${category}`}
-                        checked={selectedCategories.includes(category)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedCategories(prev => [...prev, category]);
-                          } else {
-                            setSelectedCategories(prev => prev.filter(c => c !== category));
-                          }
-                        }}
-                      />
-                      <label 
-                        htmlFor={`category-${category}`}
-                        className="text-sm"
-                      >
-                        {category}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Source Checkboxes */}
-              <div>
-                <h3 className="font-medium mb-3">Sources</h3>
-                <div className="space-y-2">
-                  {sources.map(source => (
-                    <div key={source} className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={`source-${source}`}
-                        checked={selectedSources.includes(source)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedSources(prev => [...prev, source]);
-                          } else {
-                            setSelectedSources(prev => prev.filter(s => s !== source));
-                          }
-                        }}
-                      />
-                      <label 
-                        htmlFor={`source-${source}`}
-                        className="text-sm"
-                      >
-                        {source}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Product Tabs */}
-        <Tabs defaultValue="trending" onValueChange={setSelectedTab}>
-          <div className="flex justify-between items-center mb-4">
-            <TabsList>
-              <TabsTrigger value="trending" className="gap-2">
-                <TrendingUp className="h-4 w-4" />
-                Trending Products
-              </TabsTrigger>
-              <TabsTrigger value="profit" className="gap-2">
-                <Zap className="h-4 w-4" />
-                High Profit Margin
-              </TabsTrigger>
-              <TabsTrigger value="competitors" className="gap-2">
-                <Users className="h-4 w-4" />
-                Competitor Insights
-              </TabsTrigger>
-            </TabsList>
-            {selectedProducts.length > 0 && (
-              <Button onClick={handleBulkImport} className="gap-2">
-                <Archive className="h-4 w-4" />
-                Import Selected ({selectedProducts.length})
+              <Button variant="secondary" onClick={handleClearFilters}>
+                Clear Filters
               </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        <Tabs defaultValue="trending" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="trending" onClick={() => setActiveTab("trending")}>Trending</TabsTrigger>
+            <TabsTrigger value="opportunities" onClick={() => setActiveTab("opportunities")}>Opportunities</TabsTrigger>
+            <TabsTrigger value="saved" onClick={() => setActiveTab("saved")}>Saved</TabsTrigger>
+          </TabsList>
+          <TabsContent value="trending" className="space-y-4">
+            {loading ? (
+              <div className="flex items-center justify-center h-48">
+                Loading products...
+              </div>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[200px]">
+                        <Button variant="ghost" size="sm" className="gap-1 h-8" onClick={() => handleSortChange("name")}>
+                          Product Name
+                          {sortBy === "name" && (sortOrder === "asc" ? "▲" : "▼")}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button variant="ghost" size="sm" className="gap-1 h-8" onClick={() => handleSortChange("category")}>
+                          Category
+                          {sortBy === "category" && (sortOrder === "asc" ? "▲" : "▼")}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button variant="ghost" size="sm" className="gap-1 h-8" onClick={() => handleSortChange("price")}>
+                          Price
+                          {sortBy === "price" && (sortOrder === "asc" ? "▲" : "▼")}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button variant="ghost" size="sm" className="gap-1 h-8" onClick={() => handleSortChange("popularity")}>
+                          Popularity
+                          {sortBy === "popularity" && (sortOrder === "asc" ? "▲" : "▼")}
+                        </Button>
+                      </TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedProducts.map((product) => (
+                      <TableRow key={product.id}>
+                        <TableCell className="font-medium">{product.name}</TableCell>
+                        <TableCell>{product.category}</TableCell>
+                        <TableCell>${product.price.toFixed(2)}</TableCell>
+                        <TableCell>{product.popularity}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-4">
+                            <Button variant="outline" size="icon" onClick={() => handleSaveToWishlist(product)} disabled={isSaving}>
+                              <Heart className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="icon" onClick={() => handleImportProduct(product)} disabled={isImporting}>
+                              <Import className="h-4 w-4" />
+                            </Button>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                  <DialogTitle>{product.name}</DialogTitle>
+                                  <DialogDescription>
+                                    Analyze product details and take action.
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="grid gap-4 py-4">
+                                  <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="imageUrl" className="text-right">
+                                      Image URL
+                                    </Label>
+                                    <Input id="imageUrl" value={product.imageUrl} className="col-span-3" readOnly />
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <Button variant="outline" size="sm">
+                                          <Copy className="h-4 w-4 mr-2" />
+                                          {copied ? <CopyCheckIcon className="h-4 w-4" /> : "Copy"}
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto" align="center">
+                                        {copied ? "Copied!" : "Copy to clipboard"}
+                                      </PopoverContent>
+                                    </Popover>
+                                  </div>
+                                  <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="description" className="text-right">
+                                      Description
+                                    </Label>
+                                    <Input id="description" value={product.description} className="col-span-3" readOnly />
+                                  </div>
+                                  <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="price" className="text-right">
+                                      Price
+                                    </Label>
+                                    <Input id="price" value={product.price.toFixed(2)} className="col-span-3" readOnly />
+                                  </div>
+                                  <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="category" className="text-right">
+                                      Category
+                                    </Label>
+                                    <Input id="category" value={product.category} className="col-span-3" readOnly />
+                                  </div>
+                                  <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="supplier" className="text-right">
+                                      Supplier
+                                    </Label>
+                                    <Input id="supplier" value={product.supplier} className="col-span-3" readOnly />
+                                  </div>
+                                  <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="popularity" className="text-right">
+                                      Popularity
+                                    </Label>
+                                    <Input id="popularity" value={product.popularity.toString()} className="col-span-3" readOnly />
+                                  </div>
+                                </div>
+                                <DialogClose asChild>
+                                  <Button type="button" variant="secondary">Close</Button>
+                                </DialogClose>
+                              </DialogContent>
+                            </Dialog>
+                            <Button variant="ghost" size="icon" onClick={() => handleShareProduct(product)}>
+                              <Share2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {sortedProducts.length === 0 && !loading && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center">
+                          No products found.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             )}
-          </div>
-
-          {isLoading ? (
-            <div className="py-12 flex flex-col items-center justify-center">
-              <Loader className="h-8 w-8 animate-spin mb-4 text-primary" />
-              <p className="text-lg text-muted-foreground">Loading products...</p>
-            </div>
-          ) : (
-            <>
-              {/* Trending Products Tab */}
-              <TabsContent value="trending" className="mt-0">
-                {filteredTrending.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <p className="text-lg text-muted-foreground mb-4">No trending products match your filters</p>
-                    <Button onClick={refreshProducts} variant="outline" className="gap-2">
-                      <RefreshCcw className="h-4 w-4" />
-                      Refresh Products
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {filteredTrending.map((product) => (
-                      <div key={product.id} className="relative">
-                        <div className="absolute top-2 left-2 z-10">
-                          <Checkbox 
-                            checked={selectedProducts.includes(product.id)}
-                            onCheckedChange={() => toggleProductSelection(product.id)}
-                          />
-                        </div>
-                        <ProductCard
-                          product={product}
-                          onImport={() => handleImportProduct(product.id)}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-
-              {/* High Profit Margin Tab */}
-              <TabsContent value="profit" className="mt-0">
-                {filteredHighProfit.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <p className="text-lg text-muted-foreground mb-4">No high profit products match your filters</p>
-                    <Button onClick={refreshProducts} variant="outline" className="gap-2">
-                      <RefreshCcw className="h-4 w-4" />
-                      Refresh Products
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {filteredHighProfit.map((product) => (
-                      <div key={product.id} className="relative">
-                        <div className="absolute top-2 left-2 z-10">
-                          <Checkbox 
-                            checked={selectedProducts.includes(product.id)}
-                            onCheckedChange={() => toggleProductSelection(product.id)}
-                          />
-                        </div>
-                        <ProductCard
-                          product={product}
-                          onImport={() => handleImportProduct(product.id)}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-
-              {/* Competitor Insights Tab */}
-              <TabsContent value="competitors" className="mt-0">
-                {filteredCompetitor.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <p className="text-lg text-muted-foreground mb-4">No competitor insights match your filters</p>
-                    <Button onClick={refreshProducts} variant="outline" className="gap-2">
-                      <RefreshCcw className="h-4 w-4" />
-                      Refresh Products
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {filteredCompetitor.map((product) => (
-                      <div key={product.id} className="relative">
-                        <div className="absolute top-2 left-2 z-10">
-                          <Checkbox 
-                            checked={selectedProducts.includes(product.id)}
-                            onCheckedChange={() => toggleProductSelection(product.id)}
-                          />
-                        </div>
-                        <div className="group rounded-xl overflow-hidden border bg-card transition-all duration-300 hover:shadow-elevation">
-                          <div className="relative">
-                            <AspectRatio ratio={4/3}>
-                              <img 
-                                src={product.image_url || product.image} 
-                                alt={product.name}
-                                className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
-                              />
-                            </AspectRatio>
-                            
-                            <div className="absolute top-2 right-2">
-                              <Badge variant="default" className="bg-blue-500/90 backdrop-blur-sm">
-                                <Users className="h-3 w-3 mr-1" />
-                                {product.competitors || 0} stores
-                              </Badge>
-                            </div>
-                            
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
-                              <Button 
-                                size="sm" 
-                                className="bg-white text-black hover:bg-white/90 gap-1.5"
-                                onClick={() => handleImportProduct(product.id)}
-                              >
-                                <ShoppingBag className="h-3.5 w-3.5" />
-                                Import Product
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          <div className="p-4">
-                            <div className="flex items-start justify-between gap-2">
-                              <h3 className="font-medium line-clamp-2 leading-tight">{product.name}</h3>
-                              <Badge variant="outline" className="shrink-0 text-xs">
-                                {product.source}
-                              </Badge>
-                            </div>
-                            
-                            <div className="mt-2 flex items-center gap-1.5">
-                              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                              <span className="text-sm">{product.rating?.toFixed(1)}</span>
-                              <span className="text-xs text-muted-foreground">• {product.category}</span>
-                            </div>
-                            
-                            <div className="mt-3 flex items-center justify-between">
-                              <div className="flex items-baseline gap-1.5">
-                                <span className="font-semibold">${product.price?.toFixed(2)}</span>
-                                <span className="text-sm text-muted-foreground line-through">
-                                  ${product.comparePrice?.toFixed(2) || product.compare_price?.toFixed(2)}
-                                </span>
-                              </div>
-                              
-                              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-900">
-                                +${product.profit?.toFixed(2)}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-            </>
-          )}
+          </TabsContent>
+          <TabsContent value="opportunities">
+            <Card>
+              <CardHeader>
+                <CardTitle>Market Opportunities</CardTitle>
+                <CardDescription>Analyze potential market opportunities based on product data</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p>Coming Soon: Advanced analytics and insights to identify promising market opportunities.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="saved">
+            <Card>
+              <CardHeader>
+                <CardTitle>Saved Products</CardTitle>
+                <CardDescription>View and manage your saved products</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p>Coming Soon: A dedicated space to manage products you've saved for later.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
-      <Toaster />
     </MainLayout>
   );
 };
