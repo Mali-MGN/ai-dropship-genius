@@ -40,13 +40,18 @@ export const ImportedProducts = () => {
     try {
       setLoading(true);
       
-      // For now, we'll simulate getting imported products from localStorage
-      // In a real application, you would fetch from your database
+      // Get imported products from localStorage
       const importedProductIds = JSON.parse(localStorage.getItem("importedProducts") || "[]");
       
       if (importedProductIds.length === 0) {
         setProducts([]);
         return;
+      }
+      
+      // For tracking imported products across months, save current list as the previous month
+      // (In a real app, this would be done automatically at month end)
+      if (!localStorage.getItem("prevMonthProducts")) {
+        localStorage.setItem("prevMonthProducts", localStorage.getItem("importedProducts") || "[]");
       }
       
       // Fetch product details from the database for all imported product IDs

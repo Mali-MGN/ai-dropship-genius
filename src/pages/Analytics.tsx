@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,82 +14,205 @@ import {
   ShoppingCart,
   Users,
   CreditCard,
-  Truck,
   RefreshCw,
   LineChart,
-  PieChart,
   BarChart,
-  ListFilter
+  ListFilter,
+  Loader2
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { formatCurrency } from '@/lib/utils';
+import { useToast } from '@/components/ui/use-toast';
 
 function Analytics() {
   const [dateRange, setDateRange] = useState("30");
+  const [statsData, setStatsData] = useState({
+    revenue: 0,
+    orders: 0,
+    visitors: 0,
+    conversionRate: 0,
+    revenueChange: 0,
+    ordersChange: 0,
+    visitorsChange: 0,
+    conversionChange: 0
+  });
+  const [chartData, setChartData] = useState({
+    revenue: [],
+    visitors: [],
+    conversion: []
+  });
+  const [topProducts, setTopProducts] = useState([]);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
   
-  // Sample data for the analytics charts
-  const salesData = [
-    { name: 'Jan', value: 3000 },
-    { name: 'Feb', value: 4500 },
-    { name: 'Mar', value: 3800 },
-    { name: 'Apr', value: 5200 },
-    { name: 'May', value: 4800 },
-    { name: 'Jun', value: 5500 },
-    { name: 'Jul', value: 6300 },
-    { name: 'Aug', value: 5900 },
-    { name: 'Sep', value: 6800 },
-    { name: 'Oct', value: 7200 },
-    { name: 'Nov', value: 6900 },
-    { name: 'Dec', value: 8000 }
-  ];
+  useEffect(() => {
+    const fetchAnalyticsData = async () => {
+      if (!user) return;
+      
+      setLoading(true);
+      try {
+        // Fetch financial summary data for charts
+        const { data: financialData, error: financialError } = await supabase
+          .from('financial_summary')
+          .select('*')
+          .order('year', { ascending: true })
+          .order('month', { ascending: true });
+        
+        if (financialError) throw financialError;
+        
+        if (financialData && financialData.length > 0) {
+          // Process data for charts
+          const revenueData = financialData.map(item => ({
+            name: `${getMonthName(item.month)} ${item.year}`,
+            value: item.total_revenue
+          }));
+          
+          // For this demo, we'll generate visitor data and conversion rate based on orders
+          const visitorsData = financialData.map(item => ({
+            name: `${getMonthName(item.month)} ${item.year}`,
+            value: item.order_count * Math.floor(Math.random() * 30) + 20
+          }));
+          
+          const conversionData = financialData.map((item, index) => ({
+            name: `${getMonthName(item.month)} ${item.year}`,
+            value: item.order_count > 0 && visitorsData[index].value > 0 
+              ? ((item.order_count / visitorsData[index].value) * 100).toFixed(1)
+              : 0
+          }));
+          
+          setChartData({
+            revenue: revenueData,
+            visitors: visitorsData,
+            conversion: conversionData
+          });
+          
+          // Calculate totals and changes
+          const currentPeriodData = financialData.slice(-parseInt(dateRange)/30 || -1);
+          const previousPeriodData = financialData.slice(-parseInt(dateRange)/15 || -2, -parseInt(dateRange)/30 || -1);
+          
+          const currentRevenue = currentPeriodData.reduce((sum, item) => sum + Number(item.total_revenue), 0);
+          const previousRevenue = previousPeriodData.reduce((sum, item) => sum + Number(item.total_revenue), 0);
+          
+          const currentOrders = currentPeriodData.reduce((sum, item) => sum + item.order_count, 0);
+          const previousOrders = previousPeriodData.reduce((sum, item) => sum + item.order_count, 0);
+          
+          const currentVisitors = currentPeriodData.reduce((sum, item, index) => {
+            const visitorData = visitorsData.find(v => v.name === `${getMonthName(item.month)} ${item.year}`);
+            return sum + (visitorData ? visitorData.value : 0);
+          }, 0);
+          
+          const previousVisitors = previousPeriodData.reduce((sum, item, index) => {
+            const visitorData = visitorsData.find(v => v.name === `${getMonthName(item.month)} ${item.year}`);
+            return sum + (visitorData ? visitorData.value : 0);
+          }, 0);
+          
+          const currentConversion = currentOrders > 0 && currentVisitors > 0 
+            ? (currentOrders / currentVisitors) * 100 
+            : 0;
+            
+          const previousConversion = previousOrders > 0 && previousVisitors > 0 
+            ? (previousOrders / previousVisitors) * 100 
+            : 0;
+          
+          // Calculate percentage changes
+          const calcPercentChange = (current, previous) => {
+            if (previous === 0) return current > 0 ? 100 : 0;
+            return ((current - previous) / previous) * 100;
+          };
+          
+          setStatsData({
+            revenue: currentRevenue,
+            orders: currentOrders,
+            visitors: currentVisitors,
+            conversionRate: currentConversion,
+            revenueChange: calcPercentChange(currentRevenue, previousRevenue),
+            ordersChange: calcPercentChange(currentOrders, previousOrders),
+            visitorsChange: calcPercentChange(currentVisitors, previousVisitors),
+            conversionChange: calcPercentChange(currentConversion, previousConversion)
+          });
+        }
+        
+        // Fetch recent orders
+        const { data: ordersData, error: ordersError } = await supabase
+          .from('user_orders')
+          .select(`
+            id,
+            order_id,
+            customer_name,
+            order_date,
+            amount,
+            status
+          `)
+          .order('order_date', { ascending: false })
+          .limit(5);
+        
+        if (ordersError) throw ordersError;
+        setRecentOrders(ordersData || []);
+        
+        // Get product data for top products
+        // For simplicity, we'll use the same data as shown in the ImportedProducts component
+        const importedProductIds = JSON.parse(localStorage.getItem("importedProducts") || "[]");
+        
+        if (importedProductIds.length > 0) {
+          const { data: productsData, error: productsError } = await supabase
+            .from("scraped_products")
+            .select("*")
+            .in("id", importedProductIds);
+            
+          if (productsError) throw productsError;
+          
+          // Join with orders data to get revenue and orders count
+          const { data: productOrdersData, error: productOrdersError } = await supabase
+            .from('user_orders')
+            .select('product_id, amount')
+            .in('product_id', importedProductIds);
+            
+          if (productOrdersError) throw productOrdersError;
+          
+          // Calculate revenue and orders per product
+          const productStats = productsData.map(product => {
+            const productOrders = productOrdersData?.filter(order => order.product_id === product.id) || [];
+            const revenue = productOrders.reduce((sum, order) => sum + order.amount, 0);
+            
+            return {
+              name: product.name,
+              revenue: revenue,
+              orders: productOrders.length,
+              conversion: Math.random() * 3 + 2 // Random conversion rate for demo
+            };
+          });
+          
+          // Sort by revenue
+          productStats.sort((a, b) => b.revenue - a.revenue);
+          setTopProducts(productStats.slice(0, 5));
+        }
+        
+      } catch (error) {
+        console.error('Error fetching analytics data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load analytics data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchAnalyticsData();
+  }, [user, dateRange, toast]);
   
-  const visitorData = [
-    { name: 'Jan', value: 12000 },
-    { name: 'Feb', value: 15000 },
-    { name: 'Mar', value: 13500 },
-    { name: 'Apr', value: 16200 },
-    { name: 'May', value: 15800 },
-    { name: 'Jun', value: 17500 },
-    { name: 'Jul', value: 19300 },
-    { name: 'Aug', value: 18900 },
-    { name: 'Sep', value: 21800 },
-    { name: 'Oct', value: 23200 },
-    { name: 'Nov', value: 22900 },
-    { name: 'Dec', value: 25000 }
-  ];
-  
-  const conversionData = [
-    { name: 'Jan', value: 2.5 },
-    { name: 'Feb', value: 3.0 },
-    { name: 'Mar', value: 2.8 },
-    { name: 'Apr', value: 3.2 },
-    { name: 'May', value: 3.0 },
-    { name: 'Jun', value: 3.1 },
-    { name: 'Jul', value: 3.3 },
-    { name: 'Aug', value: 3.1 },
-    { name: 'Sep', value: 3.4 },
-    { name: 'Oct', value: 3.5 },
-    { name: 'Nov', value: 3.3 },
-    { name: 'Dec', value: 3.8 }
-  ];
-  
-  // Top products data
-  const topProducts = [
-    { name: "Wireless Earbuds", revenue: 24500, orders: 520, conversion: 4.2 },
-    { name: "Portable Charger", revenue: 18700, orders: 415, conversion: 3.8 },
-    { name: "Smart Watch", revenue: 17900, orders: 380, conversion: 3.5 },
-    { name: "LED String Lights", revenue: 16400, orders: 610, conversion: 5.2 },
-    { name: "Canvas Backpack", revenue: 15200, orders: 340, conversion: 3.0 },
-  ];
-  
-  // Recent orders data
-  const recentOrders = [
-    { id: "#ORD-5521", customer: "John Smith", date: "2025-03-08", amount: 129.99, status: "delivered" },
-    { id: "#ORD-5520", customer: "Sarah Johnson", date: "2025-03-08", amount: 79.95, status: "processing" },
-    { id: "#ORD-5519", customer: "Michael Davis", date: "2025-03-07", amount: 54.99, status: "delivered" },
-    { id: "#ORD-5518", customer: "Emily Wilson", date: "2025-03-07", amount: 199.50, status: "shipped" },
-    { id: "#ORD-5517", customer: "Robert Brown", date: "2025-03-06", amount: 45.75, status: "delivered" },
-  ];
+  // Helper function to get month name
+  const getMonthName = (month) => {
+    const date = new Date();
+    date.setMonth(month - 1);
+    return date.toLocaleString('default', { month: 'short' });
+  };
 
   return (
     <MainLayout>
@@ -106,10 +229,13 @@ function Analytics() {
                 <SelectItem value="30">Last 30 days</SelectItem>
                 <SelectItem value="90">Last 3 months</SelectItem>
                 <SelectItem value="365">Last year</SelectItem>
-                <SelectItem value="custom">Custom range</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="icon">
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={() => window.location.reload()}
+            >
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
@@ -119,35 +245,35 @@ function Analytics() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard 
             title="Total Revenue" 
-            value="$85,240.45" 
-            change={15.3}
+            value={formatCurrency(statsData.revenue)} 
+            change={statsData.revenueChange}
             description="vs. previous period"
             icon={<DollarSign className="h-4 w-4" />}
           />
           <StatCard 
             title="Orders" 
-            value="2,456" 
-            change={8.2}
+            value={statsData.orders.toString()} 
+            change={statsData.ordersChange}
             description="vs. previous period"
             icon={<ShoppingCart className="h-4 w-4" />}
           />
           <StatCard 
             title="Visitors" 
-            value="152,854" 
-            change={12.5}
+            value={statsData.visitors.toString()} 
+            change={statsData.visitorsChange}
             description="vs. previous period"
             icon={<Users className="h-4 w-4" />}
           />
           <StatCard 
             title="Conversion Rate" 
-            value="3.2%" 
-            change={-0.4}
+            value={`${statsData.conversionRate.toFixed(1)}%`} 
+            change={statsData.conversionChange}
             description="vs. previous period"
             icon={<ArrowUpRight className="h-4 w-4" />}
           />
         </div>
         
-        {/* Financial Statistics (Moved from Dashboard) */}
+        {/* Financial Statistics */}
         <FinancialStats />
         
         {/* Chart Tabs */}
@@ -172,11 +298,21 @@ function Analytics() {
               <CardHeader className="pb-2">
                 <CardTitle>Revenue Growth</CardTitle>
                 <CardDescription>
-                  Daily revenue for the selected period
+                  Monthly revenue for the selected period
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <AnalyticsChart data={salesData} title="" />
+                {loading ? (
+                  <div className="flex justify-center items-center h-[300px]">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : chartData.revenue.length > 0 ? (
+                  <AnalyticsChart data={chartData.revenue} title="" />
+                ) : (
+                  <div className="flex justify-center items-center h-[300px]">
+                    <p className="text-muted-foreground">No revenue data available</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -186,11 +322,21 @@ function Analytics() {
               <CardHeader className="pb-2">
                 <CardTitle>Website Visitors</CardTitle>
                 <CardDescription>
-                  Daily visitors for the selected period
+                  Monthly visitors for the selected period
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <AnalyticsChart data={visitorData} title="" />
+                {loading ? (
+                  <div className="flex justify-center items-center h-[300px]">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : chartData.visitors.length > 0 ? (
+                  <AnalyticsChart data={chartData.visitors} title="" />
+                ) : (
+                  <div className="flex justify-center items-center h-[300px]">
+                    <p className="text-muted-foreground">No visitor data available</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -200,11 +346,21 @@ function Analytics() {
               <CardHeader className="pb-2">
                 <CardTitle>Conversion Rate</CardTitle>
                 <CardDescription>
-                  Daily conversion rate for the selected period
+                  Monthly conversion rate for the selected period
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <AnalyticsChart data={conversionData} title="" />
+                {loading ? (
+                  <div className="flex justify-center items-center h-[300px]">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : chartData.conversion.length > 0 ? (
+                  <AnalyticsChart data={chartData.conversion} title="" />
+                ) : (
+                  <div className="flex justify-center items-center h-[300px]">
+                    <p className="text-muted-foreground">No conversion data available</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -223,26 +379,37 @@ function Analytics() {
                 </Button>
               </div>
               <CardDescription>
-                Products with the highest revenue in selected period
+                Products with the highest revenue
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[300px]">
-                <div className="space-y-2">
-                  {topProducts.map((product, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50">
-                      <div className="flex items-center gap-3">
-                        <div className="font-medium">{i + 1}.</div>
-                        <div>
-                          <div className="font-medium">{product.name}</div>
-                          <div className="text-sm text-muted-foreground">{product.orders} orders • {product.conversion}% conversion</div>
-                        </div>
-                      </div>
-                      <div className="font-semibold">${product.revenue.toLocaleString()}</div>
-                    </div>
-                  ))}
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              </ScrollArea>
+              ) : topProducts.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No product data available</p>
+                  <p className="text-sm">Import products and place orders to see data here</p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[300px]">
+                  <div className="space-y-2">
+                    {topProducts.map((product, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50">
+                        <div className="flex items-center gap-3">
+                          <div className="font-medium">{i + 1}.</div>
+                          <div>
+                            <div className="font-medium">{product.name}</div>
+                            <div className="text-sm text-muted-foreground">{product.orders} orders • {product.conversion.toFixed(1)}% conversion</div>
+                          </div>
+                        </div>
+                        <div className="font-semibold">{formatCurrency(product.revenue)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
             </CardContent>
           </Card>
           
@@ -255,49 +422,62 @@ function Analytics() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[300px]">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left text-xs font-medium text-muted-foreground">
-                      <th className="pb-3 pl-2">Order</th>
-                      <th className="pb-3">Customer</th>
-                      <th className="pb-3">Date</th>
-                      <th className="pb-3">Amount</th>
-                      <th className="pb-3 pr-2">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentOrders.map((order, i) => (
-                      <tr key={i} className="border-t border-border">
-                        <td className="py-3 pl-2">
-                          <div className="font-medium">{order.id}</div>
-                        </td>
-                        <td className="py-3">
-                          <div>{order.customer}</div>
-                        </td>
-                        <td className="py-3">
-                          <div>{order.date}</div>
-                        </td>
-                        <td className="py-3">
-                          <div>${order.amount}</div>
-                        </td>
-                        <td className="py-3 pr-2">
-                          <Badge variant={
-                            order.status === "delivered" ? "outline" : 
-                            order.status === "processing" ? "secondary" : 
-                            "default"
-                          }>
-                            {order.status}
-                          </Badge>
-                        </td>
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : recentOrders.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No orders found</p>
+                  <p className="text-sm">Place orders to see data here</p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[300px]">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left text-xs font-medium text-muted-foreground">
+                        <th className="pb-3 pl-2">Order</th>
+                        <th className="pb-3">Customer</th>
+                        <th className="pb-3">Date</th>
+                        <th className="pb-3">Amount</th>
+                        <th className="pb-3 pr-2">Status</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </ScrollArea>
+                    </thead>
+                    <tbody>
+                      {recentOrders.map((order) => (
+                        <tr key={order.id} className="border-t border-border">
+                          <td className="py-3 pl-2">
+                            <div className="font-medium">{order.order_id}</div>
+                          </td>
+                          <td className="py-3">
+                            <div>{order.customer_name}</div>
+                          </td>
+                          <td className="py-3">
+                            <div>{new Date(order.order_date).toLocaleDateString()}</div>
+                          </td>
+                          <td className="py-3">
+                            <div>{formatCurrency(order.amount)}</div>
+                          </td>
+                          <td className="py-3 pr-2">
+                            <Badge variant={
+                              order.status === "delivered" ? "outline" : 
+                              order.status === "processing" ? "secondary" : 
+                              order.status === "shipped" ? "default" :
+                              order.status === "cancelled" ? "destructive" :
+                              "outline"
+                            }>
+                              {order.status}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </ScrollArea>
+              )}
             </CardContent>
             <CardFooter className="border-t px-6 py-3">
-              <Button variant="outline" className="w-full">View All Orders</Button>
+              <Button variant="outline" className="w-full" onClick={() => window.location.href = '/orders'}>View All Orders</Button>
             </CardFooter>
           </Card>
         </div>
