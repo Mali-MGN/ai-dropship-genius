@@ -22,8 +22,8 @@ export function RecentSales() {
         setLoading(true);
         const { data, error } = await supabase
           .from("user_orders")
-          .select("id, customer_name, customer_email, amount, created_at")
-          .order("created_at", { ascending: false })
+          .select("id, customer_name, customer_email, amount, order_date")
+          .order("order_date", { ascending: false })
           .limit(5);
 
         if (error) throw error;
@@ -34,7 +34,7 @@ export function RecentSales() {
           customer_name: sale.customer_name || "Anonymous Customer",
           customer_email: sale.customer_email || "no-email@example.com",
           total_amount: sale.amount || 0,
-          created_at: sale.created_at
+          created_at: sale.order_date
         }));
         
         setSales(formattedData);

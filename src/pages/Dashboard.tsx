@@ -33,23 +33,13 @@ const Dashboard = () => {
       try {
         setLoading(true);
 
-        // Fetch total users - using auth.users instead of profiles table
-        const { count: userCount, error: usersError } = await supabase
-          .from('auth.users')
-          .select('*', { count: 'exact', head: true });
-
-        if (usersError) {
-          console.error("Error fetching users:", usersError);
-          // Fallback to a simpler query without count if the first one fails
-          const { data: usersData, error: usersDataError } = await supabase
-            .from('user_preferences')
-            .select('user_id');
+        // Fetch total users - using user_preferences instead of auth.users
+        const { data: usersData, error: usersError } = await supabase
+          .from('user_preferences')
+          .select('user_id');
           
-          if (usersDataError) throw usersDataError;
-          setTotalUsers(usersData?.length || 0);
-        } else {
-          setTotalUsers(userCount || 0);
-        }
+        if (usersError) throw usersError;
+        setTotalUsers(usersData?.length || 0);
 
         // Fetch total orders
         const { data: orders, error: ordersError } = await supabase
@@ -65,7 +55,7 @@ const Dashboard = () => {
           .select('amount');
 
         if (revenueError) throw revenueError;
-        const totalRevenueValue = revenue?.reduce((acc, order) => acc + (order.amount || 0), 0) || 0;
+        const totalRevenueValue = revenue?.reduce((acc, order) => acc + (Number(order.amount) || 0), 0) || 0;
         setTotalRevenue(totalRevenueValue);
 
         // Calculate average order value
@@ -77,12 +67,12 @@ const Dashboard = () => {
         const lastMonthStartDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
         const lastMonthEndDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
 
-        // Fetch previous month's users (using a simpler approach)
+        // Fetch previous month's users
         const { data: prevUsers, error: prevUsersError } = await supabase
           .from('user_preferences')
           .select('user_id')
-          .gte('created_at', lastMonthStartDate.toISOString())
-          .lte('created_at', lastMonthEndDate.toISOString());
+          .gte('last_updated', lastMonthStartDate.toISOString())
+          .lte('last_updated', lastMonthEndDate.toISOString());
 
         if (prevUsersError) console.error("Error fetching previous month's users:", prevUsersError);
 
@@ -90,8 +80,8 @@ const Dashboard = () => {
         const { data: prevOrders, error: prevOrdersError } = await supabase
           .from('user_orders')
           .select('id')
-          .gte('created_at', lastMonthStartDate.toISOString())
-          .lte('created_at', lastMonthEndDate.toISOString());
+          .gte('order_date', lastMonthStartDate.toISOString())
+          .lte('order_date', lastMonthEndDate.toISOString());
 
         if (prevOrdersError) console.error("Error fetching previous month's orders:", prevOrdersError);
 
@@ -99,20 +89,18 @@ const Dashboard = () => {
         const { data: prevRevenue, error: prevRevenueError } = await supabase
           .from('user_orders')
           .select('amount')
-          .gte('created_at', lastMonthStartDate.toISOString())
-          .lte('created_at', lastMonthEndDate.toISOString());
+          .gte('order_date', lastMonthStartDate.toISOString())
+          .lte('order_date', lastMonthEndDate.toISOString());
 
         if (prevRevenueError) console.error("Error fetching previous month's revenue:", prevRevenueError);
 
-        const prevTotalRevenueValue = prevRevenue?.reduce((acc, order) => acc + (order.amount || 0), 0) || 0;
+        const prevTotalRevenueValue = prevRevenue?.reduce((acc, order) => acc + (Number(order.amount) || 0), 0) || 0;
         const prevTotalOrders = prevOrders?.length || 0;
         const prevAverageOrderValue = prevTotalOrders ? prevTotalRevenueValue / prevTotalOrders : 0;
 
         // Calculate percentage changes
-        const currentUsers = totalUsers || 0;
-        const previousMonthUsers = prevUsers?.length || 0;
-        setNewUsersPercentageChange(calculatePercentageChange(currentUsers, previousMonthUsers));
-        setNewOrdersPercentageChange(calculatePercentageChange(orders?.length || 0, prevTotalOrders));
+        setNewUsersPercentageChange(calculatePercentageChange(usersData?.length || 0, prevUsers?.length || 0));
+        setNewOrdersPercentageChange(calculatePercentageChange(orders?.length || 0, prevOrders?.length || 0));
         setNewRevenuePercentageChange(calculatePercentageChange(totalRevenueValue, prevTotalRevenueValue));
         setNewAOVPercentageChange(calculatePercentageChange(averageValue, prevAverageOrderValue));
 

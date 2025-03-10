@@ -1,60 +1,25 @@
-import { useState, useEffect, useRef } from "react";
+
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/components/ui/use-toast";
-import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from "@/components/ui/dialog"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { cn } from "@/lib/utils";
-import { CalendarIcon, CheckCheck, Copy, CopyCheckIcon, Filter, Funnel, GripVertical, Heart, Import, MoreHorizontal, Search, Share2, Star } from "lucide-react";
-import { format } from "date-fns";
-import { DateRange } from "react-day-picker";
-import { useAuth } from "@/context/AuthContext";
-import {
-  Megaphone,
-  BarChart,
-  Target,
-  Settings
-} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "@/components/ui/use-toast";
+import { 
+  Search, 
+  ArrowUpDown, 
+  Filter, 
+  ShoppingCart, 
+  Star, 
+  TrendingUp,
+  DollarSign, 
+  BarChart4,
+  Loader2
+} from "lucide-react";
 
 interface ProductData {
   id: string;
@@ -63,53 +28,66 @@ interface ProductData {
   price: number;
   imageUrl: string;
   category: string;
-  supplier: string;
-  popularity: number;
-  profitMargin: number;
-  cost: number;
-  shippingCost: number;
+  tags: string[];
   rating: number;
-  unitsSold: number;
-  inventoryLevel: number;
-  manufacturingCost: number;
-  marketingSpend: number;
-  customerSatisfaction: number;
-  riskScore: number;
-  opportunityScore: number;
+  reviewCount: number;
+  trending: boolean;
+  profitMargin: number;
+  source: string;
+  comparePrice: number;
+  createdAt: string;
+  updatedAt: string;
+  productUrl: string;
+  inStock: boolean;
 }
 
-const ProductDiscovery = () => {
-  const [activeTab, setActiveTab] = useState("trending");
+export default function ProductDiscovery() {
   const [products, setProducts] = useState<ProductData[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-    const [categoryFilter, setCategoryFilter] = useState("");
-    const [supplierFilter, setSupplierFilter] = useState("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [sortBy, setSortBy] = useState<keyof ProductData>("popularity");
-  const [showFilters, setShowFilters] = useState(false);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: new Date(2023, 0, 1),
-    to: new Date(),
-  })
-  const [isImporting, setIsImporting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const { toast } = useToast();
-  const { user } = useAuth();
-  const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [currentTab, setCurrentTab] = useState("trending");
+  const [sortOrder, setSortOrder] = useState("trending");
+  const [importing, setImporting] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    async function fetchProducts() {
       try {
         setLoading(true);
+        // Use the correct table name 'scraped_products'
         const { data, error } = await supabase
-          .from("products")
+          .from("scraped_products")
           .select("*");
 
-        if (error) throw error;
-        setProducts(data);
+        if (error) {
+          throw error;
+        }
+
+        if (data) {
+          // Transform data to match ProductData interface
+          const transformedData: ProductData[] = data.map(item => ({
+            id: item.id,
+            name: item.name || "",
+            description: item.description || "",
+            price: Number(item.price) || 0,
+            imageUrl: item.image_url || "https://placehold.co/600x400?text=No+Image",
+            category: item.category || "Uncategorized",
+            tags: item.tags || [],
+            rating: item.rating || 0,
+            reviewCount: item.review_count || 0,
+            trending: item.is_trending || false,
+            profitMargin: item.profit_margin || 0,
+            source: item.source || "Unknown",
+            comparePrice: item.compare_price || 0,
+            createdAt: item.created_at || new Date().toISOString(),
+            updatedAt: item.updated_at || new Date().toISOString(),
+            productUrl: item.product_url || "#",
+            inStock: true
+          }));
+          
+          setProducts(transformedData);
+          filterProducts(transformedData, currentTab, searchQuery);
+        }
       } catch (error) {
         console.error("Error fetching products:", error);
         toast({
@@ -120,459 +98,258 @@ const ProductDiscovery = () => {
       } finally {
         setLoading(false);
       }
-    };
+    }
 
     fetchProducts();
-  }, []);
+  }, [currentTab, searchQuery]);
 
-  const filteredProducts = products.filter((product) => {
-    const searchRegex = new RegExp(searchQuery, "i");
-    const categoryMatch = categoryFilter ? product.category === categoryFilter : true;
-        const supplierMatch = supplierFilter ? product.supplier === supplierFilter : true;
-    const priceMatch = product.price >= priceRange[0] && product.price <= priceRange[1];
-
-    return (
-      searchRegex.test(product.name) &&
-            categoryMatch &&
-            supplierMatch &&
-      priceMatch
-    );
-  });
-
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    const order = sortOrder === "asc" ? 1 : -1;
-
-    if (typeof a[sortBy] === "number" && typeof b[sortBy] === "number") {
-      return order * ((a[sortBy] as number) - (b[sortBy] as number));
-    } else if (typeof a[sortBy] === "string" && typeof b[sortBy] === "string") {
-      return order * a[sortBy].localeCompare(b[sortBy]);
-    } else {
-      return 0;
+  const filterProducts = (allProducts: ProductData[], tab: string, query: string) => {
+    let filtered = [...allProducts];
+    
+    // Apply search query filter
+    if (query) {
+      filtered = filtered.filter(
+        product => 
+          product.name.toLowerCase().includes(query.toLowerCase()) ||
+          product.description.toLowerCase().includes(query.toLowerCase()) ||
+          product.category.toLowerCase().includes(query.toLowerCase()) ||
+          (product.tags && product.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase())))
+      );
     }
-  });
-
-  const handleCopyClick = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-
-    if (copyTimeoutRef.current) {
-      clearTimeout(copyTimeoutRef.current);
+    
+    // Apply tab filter
+    switch (tab) {
+      case "trending":
+        filtered = filtered.filter(product => product.trending);
+        break;
+      case "profit":
+        filtered = filtered.sort((a, b) => b.profitMargin - a.profitMargin);
+        filtered = filtered.slice(0, 20); // Top 20 products by profit margin
+        break;
+      case "competitors":
+        // Filter by competitor-related products (for now just show all)
+        filtered = [...filtered];
+        break;
+      default:
+        // No special filtering
+        break;
     }
-
-    copyTimeoutRef.current = setTimeout(() => {
-      setCopied(false);
-    }, 2000);
-  };
-
-  const handlePriceRangeChange = (value: number[]) => {
-    setPriceRange([value[0], value[1]]);
-  };
-
-  const handleDateChange = (newDate: DateRange | undefined) => {
-    setDate(newDate);
-  };
-
-  const handleToggleFilters = () => {
-    setShowFilters(!showFilters);
-  };
-
-  const handleClearFilters = () => {
-        setCategoryFilter("");
-        setSupplierFilter("");
-    setPriceRange([0, 1000]);
-    setDate(undefined);
-  };
-
-  const handleCategoryFilterChange = (category: string) => {
-        setCategoryFilter(category);
-    };
-
-    const handleSupplierFilterChange = (supplier: string) => {
-        setSupplierFilter(supplier);
-    };
-
-  const handleSortChange = (newSortBy: keyof ProductData) => {
-    if (newSortBy === sortBy) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(newSortBy);
-      setSortOrder("asc");
+    
+    // Apply sorting
+    switch (sortOrder) {
+      case "price-asc":
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case "price-desc":
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+      case "trending":
+        filtered.sort((a, b) => (b.trending ? 1 : 0) - (a.trending ? 1 : 0));
+        break;
+      case "rating":
+        filtered.sort((a, b) => b.rating - a.rating);
+        break;
+      default:
+        // No special sorting
+        break;
     }
+    
+    setFilteredProducts(filtered);
   };
 
-  const handleShareProduct = (product: ProductData) => {
-    const shareData = {
-      title: product.name,
-      text: product.description,
-      url: product.imageUrl,
-    };
-
-    if (navigator.share) {
-      navigator
-        .share(shareData)
-        .then(() => {
-          toast({
-            title: "Product shared!",
-            description: `You have successfully shared ${product.name}`,
-          });
-        })
-        .catch((error) => {
-          console.error("Error sharing product:", error);
-          toast({
-            title: "Error sharing product",
-            description: "There was an error sharing the product.",
-            variant: "destructive",
-          });
-        });
-    } else {
-      toast({
-        title: "Share API not supported",
-        description: "Your browser does not support the Share API.",
-        variant: "destructive",
-      });
-    }
+  const handleTabChange = (value: string) => {
+    setCurrentTab(value);
+    filterProducts(products, value, searchQuery);
   };
 
-  const handleSaveToWishlist = async (product: ProductData) => {
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    filterProducts(products, currentTab, e.target.value);
+  };
+
+  const handleSort = (order: string) => {
+    setSortOrder(order);
+    filterProducts(products, currentTab, searchQuery);
+  };
+
+  const handleImport = async (productId: string) => {
     try {
-      setIsSaving(true);
-      // Simulate saving to wishlist
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      toast({
-        title: "Added to wishlist",
-        description: "Product has been added to your wishlist",
-      });
+      setImporting(prev => ({ ...prev, [productId]: true }));
       
-      return;
-    } catch (error) {
-      console.error("Error saving to wishlist:", error);
+      // Simulate import process
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      toast({
-        title: "Failed to add product",
-        description: "There was an error adding the product to your wishlist",
-        variant: "destructive",
-      });
-      
-      return;
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleImportProduct = async (product: ProductData) => {
-    try {
-      setIsImporting(true);
-      // Simulate importing product
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
       toast({
         title: "Product imported",
-        description: "Product has been added to your store",
+        description: "The product has been imported to your store.",
       });
-      
-      return;
     } catch (error) {
       console.error("Error importing product:", error);
-      
       toast({
-        title: "Failed to import product",
-        description: "There was an error importing the product to your store",
+        title: "Import failed",
+        description: "Failed to import the product. Please try again.",
         variant: "destructive",
       });
-      
-      return;
     } finally {
-      setIsImporting(false);
+      setImporting(prev => ({ ...prev, [productId]: false }));
     }
   };
-
-  const categories = [...new Set(products.map((product) => product.category))];
-    const suppliers = [...new Set(products.map((product) => product.supplier))];
 
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 mb-6">
           <h1 className="text-3xl font-semibold tracking-tight">Product Discovery</h1>
-          <p className="text-muted-foreground text-lg">Discover trending products and analyze market opportunities</p>
+          <p className="text-muted-foreground text-lg">Find trending products to add to your store</p>
         </div>
-
-        <div className="flex items-center justify-between">
-          <Input
-            type="search"
-            placeholder="Search products..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="max-w-md"
-          />
-
-          <Button variant="outline" onClick={handleToggleFilters}>
-            <Filter className="mr-2 h-4 w-4" />
-            Filters
+        
+        <div className="flex items-center space-x-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search products..."
+              className="pl-8"
+              value={searchQuery}
+              onChange={handleSearch}
+            />
+          </div>
+          
+          <Button variant="outline" onClick={() => handleSort(sortOrder === 'price-asc' ? 'price-desc' : 'price-asc')}>
+            <ArrowUpDown className="mr-2 h-4 w-4" />
+            Price
+          </Button>
+          
+          <Button variant="outline" onClick={() => handleSort('rating')}>
+            <Star className="mr-2 h-4 w-4" />
+            Rating
+          </Button>
+          
+          <Button variant="outline" onClick={() => handleSort('trending')}>
+            <TrendingUp className="mr-2 h-4 w-4" />
+            Trending
           </Button>
         </div>
-
-        {showFilters && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Filters</CardTitle>
-              <CardDescription>Apply filters to narrow down your product search</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                                <Select onValueChange={handleCategoryFilterChange}>
-                                        <SelectTrigger className="w-[180px]">
-                                                <SelectValue placeholder="Select category" defaultValue={categoryFilter} />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                                <SelectItem value="">All Categories</SelectItem>
-                                                {categories.map((category) => (
-                                                        <SelectItem key={category} value={category}>
-                                                                {category}
-                                                        </SelectItem>
-                                                ))}
-                                        </SelectContent>
-                                </Select>
-              </div>
-                            <div className="space-y-2">
-                                    <Label htmlFor="supplier">Supplier</Label>
-                                    <Select onValueChange={handleSupplierFilterChange}>
-                                            <SelectTrigger className="w-[180px]">
-                                                    <SelectValue placeholder="Select supplier" defaultValue={supplierFilter} />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                    <SelectItem value="">All Suppliers</SelectItem>
-                                                    {suppliers.map((supplier) => (
-                                                            <SelectItem key={supplier} value={supplier}>
-                                                                    {supplier}
-                                                            </SelectItem>
-                                                    ))}
-                                            </SelectContent>
-                                    </Select>
-                            </div>
-              <div className="space-y-2">
-                <Label htmlFor="price-range">Price Range</Label>
-                <Slider
-                  id="price-range"
-                  defaultValue={priceRange}
-                  max={1000}
-                  step={10}
-                  onValueChange={handlePriceRangeChange}
-                />
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>${priceRange[0]}</span>
-                  <span>${priceRange[1]}</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Date Range</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-[280px] justify-start text-left font-normal",
-                        !date && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date?.from ? (
-                        date.to ? (
-                          `${format(date.from, "LLL dd, y")} - ${format(date.to, "LLL dd, y")}`
-                        ) : (
-                          format(date.from, "LLL dd, y")
-                        )
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="center">
-                    <Calendar
-                      mode="range"
-                      defaultMonth={date?.from}
-                      selected={date}
-                      onSelect={handleDateChange}
-                      numberOfMonths={2}
-                      pagedNavigation
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <Button variant="secondary" onClick={handleClearFilters}>
-                Clear Filters
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        <Tabs defaultValue="trending" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="trending" onClick={() => setActiveTab("trending")}>Trending</TabsTrigger>
-            <TabsTrigger value="opportunities" onClick={() => setActiveTab("opportunities")}>Opportunities</TabsTrigger>
-            <TabsTrigger value="saved" onClick={() => setActiveTab("saved")}>Saved</TabsTrigger>
+        
+        <Tabs defaultValue="trending" value={currentTab} onValueChange={handleTabChange}>
+          <TabsList className="mb-6">
+            <TabsTrigger value="trending">
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Trending Products
+            </TabsTrigger>
+            <TabsTrigger value="profit">
+              <DollarSign className="mr-2 h-4 w-4" />
+              High Profit Margin
+            </TabsTrigger>
+            <TabsTrigger value="competitors">
+              <BarChart4 className="mr-2 h-4 w-4" />
+              Competitor Insights
+            </TabsTrigger>
           </TabsList>
+          
           <TabsContent value="trending" className="space-y-4">
-            {loading ? (
-              <div className="flex items-center justify-center h-48">
-                Loading products...
-              </div>
-            ) : (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[200px]">
-                        <Button variant="ghost" size="sm" className="gap-1 h-8" onClick={() => handleSortChange("name")}>
-                          Product Name
-                          {sortBy === "name" && (sortOrder === "asc" ? "▲" : "▼")}
-                        </Button>
-                      </TableHead>
-                      <TableHead>
-                        <Button variant="ghost" size="sm" className="gap-1 h-8" onClick={() => handleSortChange("category")}>
-                          Category
-                          {sortBy === "category" && (sortOrder === "asc" ? "▲" : "▼")}
-                        </Button>
-                      </TableHead>
-                      <TableHead>
-                        <Button variant="ghost" size="sm" className="gap-1 h-8" onClick={() => handleSortChange("price")}>
-                          Price
-                          {sortBy === "price" && (sortOrder === "asc" ? "▲" : "▼")}
-                        </Button>
-                      </TableHead>
-                      <TableHead>
-                        <Button variant="ghost" size="sm" className="gap-1 h-8" onClick={() => handleSortChange("popularity")}>
-                          Popularity
-                          {sortBy === "popularity" && (sortOrder === "asc" ? "▲" : "▼")}
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sortedProducts.map((product) => (
-                      <TableRow key={product.id}>
-                        <TableCell className="font-medium">{product.name}</TableCell>
-                        <TableCell>{product.category}</TableCell>
-                        <TableCell>${product.price.toFixed(2)}</TableCell>
-                        <TableCell>{product.popularity}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-4">
-                            <Button variant="outline" size="icon" onClick={() => handleSaveToWishlist(product)} disabled={isSaving}>
-                              <Heart className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="icon" onClick={() => handleImportProduct(product)} disabled={isImporting}>
-                              <Import className="h-4 w-4" />
-                            </Button>
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="sm:max-w-[425px]">
-                                <DialogHeader>
-                                  <DialogTitle>{product.name}</DialogTitle>
-                                  <DialogDescription>
-                                    Analyze product details and take action.
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="imageUrl" className="text-right">
-                                      Image URL
-                                    </Label>
-                                    <Input id="imageUrl" value={product.imageUrl} className="col-span-3" readOnly />
-                                    <Popover>
-                                      <PopoverTrigger asChild>
-                                        <Button variant="outline" size="sm">
-                                          <Copy className="h-4 w-4 mr-2" />
-                                          {copied ? <CopyCheckIcon className="h-4 w-4" /> : "Copy"}
-                                        </Button>
-                                      </PopoverTrigger>
-                                      <PopoverContent className="w-auto" align="center">
-                                        {copied ? "Copied!" : "Copy to clipboard"}
-                                      </PopoverContent>
-                                    </Popover>
-                                  </div>
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="description" className="text-right">
-                                      Description
-                                    </Label>
-                                    <Input id="description" value={product.description} className="col-span-3" readOnly />
-                                  </div>
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="price" className="text-right">
-                                      Price
-                                    </Label>
-                                    <Input id="price" value={product.price.toFixed(2)} className="col-span-3" readOnly />
-                                  </div>
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="category" className="text-right">
-                                      Category
-                                    </Label>
-                                    <Input id="category" value={product.category} className="col-span-3" readOnly />
-                                  </div>
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="supplier" className="text-right">
-                                      Supplier
-                                    </Label>
-                                    <Input id="supplier" value={product.supplier} className="col-span-3" readOnly />
-                                  </div>
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="popularity" className="text-right">
-                                      Popularity
-                                    </Label>
-                                    <Input id="popularity" value={product.popularity.toString()} className="col-span-3" readOnly />
-                                  </div>
-                                </div>
-                                <DialogClose asChild>
-                                  <Button type="button" variant="secondary">Close</Button>
-                                </DialogClose>
-                              </DialogContent>
-                            </Dialog>
-                            <Button variant="ghost" size="icon" onClick={() => handleShareProduct(product)}>
-                              <Share2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {sortedProducts.length === 0 && !loading && (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center">
-                          No products found.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </TabsContent>
-          <TabsContent value="opportunities">
             <Card>
               <CardHeader>
-                <CardTitle>Market Opportunities</CardTitle>
-                <CardDescription>Analyze potential market opportunities based on product data</CardDescription>
+                <CardTitle>Trending Products</CardTitle>
+                <CardDescription>
+                  Hot selling products that are trending right now. Updated daily.
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <p>Coming Soon: Advanced analytics and insights to identify promising market opportunities.</p>
+                {loading ? (
+                  <div className="flex items-center justify-center h-48">
+                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                    Loading trending products...
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredProducts.length > 0 ? (
+                      filteredProducts.map(product => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          onImport={handleImport}
+                          importing={importing[product.id] || false}
+                        />
+                      ))
+                    ) : (
+                      <div className="col-span-full text-center py-10">
+                        <p className="text-muted-foreground">No trending products found.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
-          <TabsContent value="saved">
+          
+          <TabsContent value="profit" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Saved Products</CardTitle>
-                <CardDescription>View and manage your saved products</CardDescription>
+                <CardTitle>High Profit Margin Products</CardTitle>
+                <CardDescription>
+                  Products with the highest profit potential for your store.
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <p>Coming Soon: A dedicated space to manage products you've saved for later.</p>
+                {loading ? (
+                  <div className="flex items-center justify-center h-48">
+                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                    Loading high profit margin products...
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredProducts.length > 0 ? (
+                      filteredProducts.map(product => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          onImport={handleImport}
+                          importing={importing[product.id] || false}
+                        />
+                      ))
+                    ) : (
+                      <div className="col-span-full text-center py-10">
+                        <p className="text-muted-foreground">No high profit margin products found.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="competitors" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Competitor Insights</CardTitle>
+                <CardDescription>
+                  Products that your competitors are selling successfully.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex items-center justify-center h-48">
+                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                    Loading competitor insights...
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredProducts.length > 0 ? (
+                      filteredProducts.map(product => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          onImport={handleImport}
+                          importing={importing[product.id] || false}
+                        />
+                      ))
+                    ) : (
+                      <div className="col-span-full text-center py-10">
+                        <p className="text-muted-foreground">No competitor insights found.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -580,6 +357,93 @@ const ProductDiscovery = () => {
       </div>
     </MainLayout>
   );
-};
+}
 
-export default ProductDiscovery;
+// Product Card Component
+function ProductCard({ 
+  product, 
+  onImport, 
+  importing 
+}: { 
+  product: ProductData; 
+  onImport: (id: string) => void; 
+  importing: boolean;
+}) {
+  return (
+    <Card className="overflow-hidden flex flex-col h-full">
+      <div className="relative h-48 overflow-hidden">
+        <img 
+          src={product.imageUrl} 
+          alt={product.name} 
+          className="w-full h-full object-cover transition-transform hover:scale-105" 
+        />
+        {product.trending && (
+          <Badge className="absolute top-2 right-2 bg-rose-500">
+            <TrendingUp className="h-3 w-3 mr-1" /> Trending
+          </Badge>
+        )}
+      </div>
+      <CardContent className="flex-1 flex flex-col p-4">
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="font-semibold text-lg line-clamp-2">{product.name}</h3>
+          <div className="flex items-center space-x-1 text-amber-500">
+            <Star className="h-4 w-4 fill-amber-500" />
+            <span className="text-sm font-medium">{product.rating.toFixed(1)}</span>
+          </div>
+        </div>
+        
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{product.description}</p>
+        
+        <div className="flex items-center gap-2 mb-3">
+          <Badge variant="outline" className="text-xs">
+            {product.category}
+          </Badge>
+          {product.tags?.slice(0, 2).map(tag => (
+            <Badge key={tag} variant="secondary" className="text-xs">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+        
+        <div className="mt-auto">
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold">${product.price.toFixed(2)}</span>
+              {product.comparePrice > 0 && (
+                <span className="text-sm line-through text-muted-foreground">
+                  ${product.comparePrice.toFixed(2)}
+                </span>
+              )}
+            </div>
+            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+              {product.profitMargin}% margin
+            </Badge>
+          </div>
+          
+          <Separator className="my-3" />
+          
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Source: {product.source}</span>
+            <Button 
+              onClick={() => onImport(product.id)} 
+              disabled={importing}
+              size="sm"
+            >
+              {importing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  Import
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
