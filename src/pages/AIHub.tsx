@@ -66,11 +66,13 @@ const AIHub = () => {
                 confidence={85}
                 tags={["eco-friendly", "sustainable", "trending"]}
               />
-              <PersonalizedProductFeed 
-                products={mockProducts}
-                loading={false}
-                onImport={handleProductImport}
-              />
+              <div className="md:col-span-2">
+                <PersonalizedProductFeed 
+                  products={mockProducts}
+                  loading={false}
+                  onImport={handleProductImport}
+                />
+              </div>
             </div>
             
             <AIProductPromptGenerator />
