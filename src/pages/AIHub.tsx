@@ -7,7 +7,40 @@ import { PersonalizedProductFeed } from '@/components/ai-discovery/PersonalizedP
 import { AIToolExplorer } from '@/components/ai-discovery/AIToolExplorer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+// Mock product data for the PersonalizedProductFeed
+const mockProducts = [
+  {
+    id: "1",
+    name: "Eco-Friendly Water Bottle",
+    image: "https://placehold.co/300x300",
+    price: 24.99,
+    comparePrice: 29.99,
+    source: "EcoStore",
+    rating: 4.7,
+    trending: true,
+    profit: 12.50,
+    category: "Home & Kitchen"
+  },
+  {
+    id: "2",
+    name: "Wireless Earbuds",
+    image: "https://placehold.co/300x300",
+    price: 89.99,
+    comparePrice: 119.99,
+    source: "TechGadgets",
+    rating: 4.5,
+    trending: true,
+    profit: 35.00,
+    category: "Electronics"
+  }
+];
+
 const AIHub = () => {
+  // Mock function for product import
+  const handleProductImport = (id: string) => {
+    console.log(`Importing product with ID: ${id}`);
+  };
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -26,8 +59,18 @@ const AIHub = () => {
           
           <TabsContent value="discovery" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <ProductInsightCard />
-              <PersonalizedProductFeed className="md:col-span-2" />
+              <ProductInsightCard 
+                title="Sustainable Products"
+                description="Eco-friendly products are showing strong growth with 68% of consumers willing to pay more for sustainable options."
+                trend="upward"
+                confidence={85}
+                tags={["eco-friendly", "sustainable", "trending"]}
+              />
+              <PersonalizedProductFeed 
+                products={mockProducts}
+                loading={false}
+                onImport={handleProductImport}
+              />
             </div>
             
             <AIProductPromptGenerator />

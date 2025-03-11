@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ProductCard } from "@/components/dashboard/ProductCard";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Target, TrendingUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Product {
   id: string;
@@ -22,12 +23,14 @@ interface PersonalizedProductFeedProps {
   products: Product[];
   loading: boolean;
   onImport: (id: string) => Promise<boolean> | void;
+  className?: string; // Added className as an optional prop
 }
 
 export function PersonalizedProductFeed({ 
   products, 
   loading, 
-  onImport 
+  onImport,
+  className 
 }: PersonalizedProductFeedProps) {
   
   // Group products by category
@@ -51,7 +54,7 @@ export function PersonalizedProductFeed({
   
   if (loading) {
     return (
-      <Card>
+      <Card className={className}>
         <CardContent className="pt-6">
           <div className="flex flex-col items-center justify-center h-48">
             <Loader2 className="h-8 w-8 mb-4 animate-spin text-primary" />
@@ -64,7 +67,7 @@ export function PersonalizedProductFeed({
   
   if (products.length === 0) {
     return (
-      <Card>
+      <Card className={className}>
         <CardContent className="pt-6">
           <div className="flex flex-col items-center justify-center h-48">
             <p className="text-muted-foreground">No products found. Try adjusting your search or preferences.</p>
@@ -75,7 +78,7 @@ export function PersonalizedProductFeed({
   }
 
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6", className)}>
       {Object.entries(productsByCategory).map(([category, categoryProducts]) => (
         <Card key={category}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
