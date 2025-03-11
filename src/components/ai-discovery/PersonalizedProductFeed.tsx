@@ -2,8 +2,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProductCard } from "@/components/dashboard/ProductCard";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Target, TrendingUp } from "lucide-react";
+import { Loader2, Target, TrendingUp, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Product {
   id: string;
@@ -17,21 +20,25 @@ interface Product {
   profit?: number;
   category?: string;
   similarityScore?: number;
+  inStock?: boolean;
+  stockQuantity?: number;
 }
 
 interface PersonalizedProductFeedProps {
   products: Product[];
   loading: boolean;
   onImport: (id: string) => Promise<boolean> | void;
-  className?: string; // Added className as an optional prop
+  className?: string;
 }
 
 export function PersonalizedProductFeed({ 
-  products, 
+  products: initialProducts, 
   loading, 
   onImport,
   className 
 }: PersonalizedProductFeedProps) {
+  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const { toast } = useToast();
   
   // Group products by category
   const getProductsByCategory = () => {
@@ -49,6 +56,52 @@ export function PersonalizedProductFeed({
     
     return categories;
   };
+  
+  // Set up real-time updates for product inventory
+  useEffect(() => {
+    // Initialize with the products passed as props
+    setProducts(initialProducts);
+    
+    // Set up a real-time subscription to product updates
+    const channel = supabase
+      .channel('product-inventory-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'scraped_products'
+        },
+        (payload) => {
+          const updatedProduct = payload.new as any;
+          
+          setProducts(currentProducts => 
+            currentProducts.map(product => 
+              product.id === updatedProduct.id 
+                ? { 
+                    ...product, 
+                    price: updatedProduct.price,
+                    inStock: updatedProduct.in_stock,
+                    stockQuantity: updatedProduct.stock_quantity
+                  } 
+                : product
+            )
+          );
+          
+          toast({
+            title: "Inventory Updated",
+            description: `${updatedProduct.name} has been updated.`,
+            variant: "default"
+          });
+        }
+      )
+      .subscribe();
+    
+    // Clean up the subscription when the component unmounts
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [initialProducts, toast]);
   
   const productsByCategory = getProductsByCategory();
   
@@ -96,12 +149,28 @@ export function PersonalizedProductFeed({
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {categoryProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onImport={onImport}
-                  showImportButton={true}
-                />
+                <div key={product.id} className="relative">
+                  {product.inStock === false && (
+                    <div className="absolute top-0 right-0 left-0 bottom-0 bg-black/50 z-10 flex items-center justify-center rounded-md">
+                      <Badge variant="destructive" className="flex items-center gap-1">
+                        <AlertCircle className="h-3.5 w-3.5" />
+                        Out of Stock
+                      </Badge>
+                    </div>
+                  )}
+                  {product.stockQuantity !== undefined && product.stockQuantity < 10 && product.stockQuantity > 0 && (
+                    <div className="absolute top-2 right-2 z-10">
+                      <Badge variant="warning" className="bg-orange-500/90">
+                        Only {product.stockQuantity} left
+                      </Badge>
+                    </div>
+                  )}
+                  <ProductCard
+                    product={product}
+                    onImport={onImport}
+                    showImportButton={product.inStock !== false}
+                  />
+                </div>
               ))}
             </div>
           </CardContent>

@@ -5,6 +5,7 @@ import { AIProductPromptGenerator } from '@/components/ai-discovery/AIProductPro
 import { ProductInsightCard } from '@/components/ai-discovery/ProductInsightCard';
 import { PersonalizedProductFeed } from '@/components/ai-discovery/PersonalizedProductFeed';
 import { AIToolExplorer } from '@/components/ai-discovery/AIToolExplorer';
+import { StoreIntegrationStatus } from '@/components/ai-discovery/StoreIntegrationStatus';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Mock product data for the PersonalizedProductFeed
@@ -19,7 +20,9 @@ const mockProducts = [
     rating: 4.7,
     trending: true,
     profit: 12.50,
-    category: "Home & Kitchen"
+    category: "Home & Kitchen",
+    inStock: true,
+    stockQuantity: 24
   },
   {
     id: "2",
@@ -31,7 +34,23 @@ const mockProducts = [
     rating: 4.5,
     trending: true,
     profit: 35.00,
-    category: "Electronics"
+    category: "Electronics",
+    inStock: true,
+    stockQuantity: 5
+  },
+  {
+    id: "3",
+    name: "Smart Watch Series X",
+    image: "https://placehold.co/300x300",
+    price: 199.99,
+    comparePrice: 249.99,
+    source: "TechGadgets",
+    rating: 4.8,
+    trending: true,
+    profit: 45.00,
+    category: "Electronics",
+    inStock: false,
+    stockQuantity: 0
   }
 ];
 
@@ -55,6 +74,7 @@ const AIHub = () => {
           <TabsList>
             <TabsTrigger value="discovery">Product Discovery</TabsTrigger>
             <TabsTrigger value="tools">Business Tools</TabsTrigger>
+            <TabsTrigger value="integrations">Store Integrations</TabsTrigger>
           </TabsList>
           
           <TabsContent value="discovery" className="space-y-4">
@@ -80,6 +100,10 @@ const AIHub = () => {
           
           <TabsContent value="tools">
             <AIToolExplorer />
+          </TabsContent>
+
+          <TabsContent value="integrations">
+            <StoreIntegrationStatus />
           </TabsContent>
         </Tabs>
       </div>
