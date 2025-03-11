@@ -8,6 +8,7 @@ import { OrdersStats } from "@/components/orders/OrdersStats";
 import { OrdersList } from "@/components/orders/OrdersList";
 import { FinancialStats } from "@/components/dashboard/FinancialStats";
 import { ImportedProducts } from "@/components/dashboard/ImportedProducts";
+import { InventoryManagement } from "@/components/dashboard/InventoryManagement";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,8 +75,12 @@ const Orders = () => {
           
           <TabsContent value="orders" className="space-y-6">
             <OrdersStats />
-            <ImportedProducts />
             <OrdersList />
+          </TabsContent>
+          
+          <TabsContent value="inventory" className="space-y-6">
+            <InventoryManagement />
+            <ImportedProducts />
           </TabsContent>
           
           <TabsContent value="analytics" className="space-y-4">

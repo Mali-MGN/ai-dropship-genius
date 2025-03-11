@@ -17,10 +17,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, MoreHorizontal, RefreshCw } from "lucide-react";
+import { StatusBadge } from "@/components/orders/StatusBadge";
+import { ExternalLink, MoreHorizontal, RefreshCw, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 export interface Order {
   id: string;
@@ -45,6 +46,7 @@ export const OrdersTable = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const fetchOrders = async () => {
     if (!user) return;
@@ -166,26 +168,8 @@ export const OrdersTable = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-200 dark:border-yellow-900">Pending</Badge>;
-      case 'processing':
-        return <Badge className="bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300 animate-pulse">Processing</Badge>;
-      case 'shipped':
-        return <Badge className="bg-purple-500 text-white hover:bg-purple-600 relative">
-          <span className="relative z-10">Shipped</span>
-          <span className="absolute inset-0 bg-purple-400 animate-pulse rounded-full opacity-50"></span>
-        </Badge>;
-      case 'delivered':
-        return <Badge className="bg-green-500 text-white hover:bg-green-600">Delivered</Badge>;
-      case 'cancelled':
-        return <Badge className="bg-red-500 text-white hover:bg-red-600">Cancelled</Badge>;
-      case 'refunded':
-        return <Badge className="bg-yellow-500 text-black hover:bg-yellow-600">Refunded</Badge>;
-      default:
-        return null;
-    }
+  const viewOrderDetails = (orderId: string) => {
+    navigate(`/order-details/${orderId}`);
   };
 
   if (loading) {
@@ -242,7 +226,7 @@ export const OrdersTable = () => {
               <TableCell>{formatCurrency(order.amount)}</TableCell>
               <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
               <TableCell>
-                {getStatusBadge(order.status)}
+                <StatusBadge status={order.status} />
               </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
@@ -253,6 +237,14 @@ export const OrdersTable = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem 
+                      onClick={() => viewOrderDetails(order.id)}
+                      className="flex items-center cursor-pointer"
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      View Details
+                    </DropdownMenuItem>
+                    
                     {order.tracking_url && (
                       <DropdownMenuItem 
                         onClick={() => window.open(order.tracking_url!, '_blank')}
