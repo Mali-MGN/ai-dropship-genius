@@ -174,19 +174,17 @@ export function StoreIntegrationStatus() {
                     <div className={`h-2.5 w-2.5 rounded-full ${integration.active ? 'bg-green-500' : 'bg-red-500'}`}></div>
                     <span className="font-medium">{integration.name}</span>
                   </div>
-                  <Badge variant={integration.active ? "success" : "destructive"} className="flex items-center gap-1">
-                    {integration.active ? (
-                      <>
-                        <Check className="h-3.5 w-3.5" />
-                        Connected
-                      </>
-                    ) : (
-                      <>
-                        <X className="h-3.5 w-3.5" />
-                        Disconnected
-                      </>
-                    )}
-                  </Badge>
+                  {integration.active ? (
+                    <Badge variant="success" className="flex items-center gap-1">
+                      <Check className="h-3.5 w-3.5" />
+                      Connected
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive" className="flex items-center gap-1">
+                      <X className="h-3.5 w-3.5" />
+                      Disconnected
+                    </Badge>
+                  )}
                 </div>
                 {integration.active && (
                   <div className="mt-3 text-sm grid grid-cols-2 gap-2">

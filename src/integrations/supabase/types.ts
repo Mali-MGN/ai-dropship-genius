@@ -149,6 +149,7 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          in_stock: boolean | null
           is_trending: boolean | null
           name: string
           price: number | null
@@ -157,6 +158,7 @@ export type Database = {
           rating: number | null
           review_count: number | null
           source: string | null
+          stock_quantity: number | null
           tags: string[] | null
           trending_score: number | null
           updated_at: string | null
@@ -168,6 +170,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          in_stock?: boolean | null
           is_trending?: boolean | null
           name: string
           price?: number | null
@@ -176,6 +179,7 @@ export type Database = {
           rating?: number | null
           review_count?: number | null
           source?: string | null
+          stock_quantity?: number | null
           tags?: string[] | null
           trending_score?: number | null
           updated_at?: string | null
@@ -187,6 +191,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          in_stock?: boolean | null
           is_trending?: boolean | null
           name?: string
           price?: number | null
@@ -195,6 +200,7 @@ export type Database = {
           rating?: number | null
           review_count?: number | null
           source?: string | null
+          stock_quantity?: number | null
           tags?: string[] | null
           trending_score?: number | null
           updated_at?: string | null
