@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -60,6 +61,7 @@ export interface Order {
 export const OrdersTable = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null); // Order ID being updated
   const [realTimeStatus, setRealTimeStatus] = useState<{[key: string]: boolean}>({});
   const { user } = useAuth();
   const { toast } = useToast();
@@ -200,6 +202,7 @@ export const OrdersTable = () => {
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    setUpdatingOrder(orderId); // Set the updating state
     try {
       // Optimistic update for better UX
       setOrders(currentOrders => 
@@ -230,6 +233,8 @@ export const OrdersTable = () => {
       
       // Revert to original data if there was an error
       fetchOrders();
+    } finally {
+      setUpdatingOrder(null); // Clear the updating state
     }
   };
 
@@ -289,7 +294,9 @@ export const OrdersTable = () => {
           {orders.map((order) => (
             <TableRow 
               key={order.id} 
-              className={`group ${realTimeStatus[order.id] ? 'bg-primary-50 dark:bg-primary-950 transition-colors duration-1000' : ''}`}
+              className={`group 
+                ${realTimeStatus[order.id] ? 'bg-primary-50 dark:bg-primary-950 transition-colors duration-1000' : ''}
+                ${updatingOrder === order.id ? 'opacity-70' : ''}`}
             >
               <TableCell className="font-medium">{order.order_id}</TableCell>
               <TableCell>{order.product?.name}</TableCell>
@@ -298,7 +305,12 @@ export const OrdersTable = () => {
               <TableCell>{formatCurrency(order.amount)}</TableCell>
               <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
               <TableCell>
-                <StatusBadge status={order.status} />
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={order.status} />
+                  {updatingOrder === order.id && (
+                    <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
+                  )}
+                </div>
               </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
@@ -330,28 +342,28 @@ export const OrdersTable = () => {
                     {/* Status update options */}
                     <DropdownMenuItem 
                       onClick={() => updateOrderStatus(order.id, 'processing')}
-                      disabled={order.status === 'processing'}
+                      disabled={order.status === 'processing' || updatingOrder === order.id}
                       className="cursor-pointer"
                     >
                       Mark as Processing
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={() => updateOrderStatus(order.id, 'shipped')}
-                      disabled={order.status === 'shipped'}
+                      disabled={order.status === 'shipped' || updatingOrder === order.id}
                       className="cursor-pointer"
                     >
                       Mark as Shipped
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={() => updateOrderStatus(order.id, 'delivered')}
-                      disabled={order.status === 'delivered'}
+                      disabled={order.status === 'delivered' || updatingOrder === order.id}
                       className="cursor-pointer"
                     >
                       Mark as Delivered
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={() => updateOrderStatus(order.id, 'cancelled')}
-                      disabled={order.status === 'cancelled'}
+                      disabled={order.status === 'cancelled' || updatingOrder === order.id}
                       className="cursor-pointer"
                     >
                       Mark as Cancelled
