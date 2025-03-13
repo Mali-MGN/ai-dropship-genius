@@ -28,8 +28,16 @@ import {
   PaginationItem,
   PaginationLink,
   PaginationNext,
-  PaginationPrevious
+  PaginationPrevious,
+  PaginationEllipsis,
 } from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Define type for the real-time payload
 interface RealtimePayload {
@@ -74,6 +82,9 @@ export const OrdersTable = () => {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [totalOrders, setTotalOrders] = useState(0);
+  const [filterStatus, setFilterStatus] = useState('');
+  const [sortField, setSortField] = useState('order_date');
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -86,7 +97,7 @@ export const OrdersTable = () => {
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
 
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('user_orders')
         .select(`
           id,
@@ -100,9 +111,20 @@ export const OrdersTable = () => {
           tracking_url,
           product:product_id(name),
           retailer:retailer_id(name)
-        `, { count: 'exact' })
-        .order('order_date', { ascending: false })
-        .range(from, to);
+        `, { count: 'exact' });
+      
+      // Apply filtering if status filter is set
+      if (filterStatus) {
+        query = query.eq('status', filterStatus);
+      }
+      
+      // Apply sorting
+      query = query.order(sortField, { ascending: sortOrder === 'asc' });
+      
+      // Apply pagination
+      query = query.range(from, to);
+      
+      const { data, error, count } = await query;
       
       if (error) throw error;
       
@@ -122,7 +144,7 @@ export const OrdersTable = () => {
 
   useEffect(() => {
     fetchOrders();
-  }, [page, user]);
+  }, [page, user, filterStatus, sortField, sortOrder]);
   
   useEffect(() => {    
     // Set up a realtime subscription for orders
@@ -285,20 +307,59 @@ export const OrdersTable = () => {
 
   return (
     <div className="overflow-x-auto">
-      <div className="flex justify-between mb-4">
+      <div className="flex flex-col sm:flex-row justify-between mb-4 gap-3">
         <div className="text-sm text-muted-foreground flex items-center gap-1">
           <Bell className="h-4 w-4" />
           <span>Real-time updates enabled</span>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchOrders}
-          className="gap-2"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
+        
+        <div className="flex flex-wrap gap-2 items-center">
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Statuses</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="processing">Processing</SelectItem>
+              <SelectItem value="shipped">Shipped</SelectItem>
+              <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={sortField} onValueChange={setSortField}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="order_date">Order Date</SelectItem>
+              <SelectItem value="amount">Amount</SelectItem>
+              <SelectItem value="customer_name">Customer Name</SelectItem>
+              <SelectItem value="status">Status</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={sortOrder} onValueChange={setSortOrder}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Sort direction" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="desc">Descending</SelectItem>
+              <SelectItem value="asc">Ascending</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchOrders}
+            className="gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
+        </div>
       </div>
       
       <Table>
@@ -426,7 +487,7 @@ export const OrdersTable = () => {
                     <React.Fragment key={p}>
                       {showEllipsisBefore && (
                         <PaginationItem>
-                          <span className="flex h-9 w-9 items-center justify-center">...</span>
+                          <PaginationEllipsis />
                         </PaginationItem>
                       )}
                       
@@ -442,7 +503,7 @@ export const OrdersTable = () => {
                       
                       {showEllipsisAfter && (
                         <PaginationItem>
-                          <span className="flex h-9 w-9 items-center justify-center">...</span>
+                          <PaginationEllipsis />
                         </PaginationItem>
                       )}
                     </React.Fragment>

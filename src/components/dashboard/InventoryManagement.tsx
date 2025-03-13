@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/dashboard/MetricCard";
@@ -79,17 +80,17 @@ export const InventoryManagement = () => {
       <CardContent className="grid gap-4 md:grid-cols-3">
         <MetricCard
           title="Total Products in Stock"
-          metric={inventoryCount.toString()}
+          value={inventoryCount.toString()}
           isLoading={loading}
         />
         <MetricCard
           title="Products with Low Stock"
-          metric={lowStockCount.toString()}
+          value={lowStockCount.toString()}
           isLoading={loading}
         />
         <MetricCard
           title="Products Out of Stock"
-          metric={outOfStockCount.toString()}
+          value={outOfStockCount.toString()}
           isLoading={loading}
         />
       </CardContent>
