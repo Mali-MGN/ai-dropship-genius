@@ -81,17 +81,17 @@ export const InventoryManagement = () => {
         <MetricCard
           title="Total Products in Stock"
           value={inventoryCount.toString()}
-          isLoading={loading}
+          loading={loading}
         />
         <MetricCard
           title="Products with Low Stock"
           value={lowStockCount.toString()}
-          isLoading={loading}
+          loading={loading}
         />
         <MetricCard
           title="Products Out of Stock"
           value={outOfStockCount.toString()}
-          isLoading={loading}
+          loading={loading}
         />
       </CardContent>
     </Card>

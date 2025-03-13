@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { formatCurrency } from "@/lib/utils";
@@ -68,10 +68,10 @@ export interface Order {
   tracking_url: string | null;
   product: {
     name: string;
-  };
+  } | null;
   retailer: {
     name: string;
-  };
+  } | null;
 }
 
 export const OrdersTable = () => {
@@ -128,7 +128,7 @@ export const OrdersTable = () => {
       
       if (error) throw error;
       
-      setOrders(data || []);
+      setOrders(data as Order[] || []);
       setTotalOrders(count || 0);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -224,7 +224,7 @@ export const OrdersTable = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, toast]);
+  }, [user, toast, realTimeStatus]);
 
   const createStatusChangeNotification = async (orderId: string, referenceId: string, oldStatus: string, newStatus: string) => {
     if (!user) return;
@@ -384,9 +384,9 @@ export const OrdersTable = () => {
                 ${updatingOrder === order.id ? 'opacity-70' : ''}`}
             >
               <TableCell className="font-medium">{order.order_id}</TableCell>
-              <TableCell>{order.product?.name}</TableCell>
+              <TableCell>{order.product?.name || 'N/A'}</TableCell>
               <TableCell>{order.customer_name}</TableCell>
-              <TableCell>{order.retailer?.name}</TableCell>
+              <TableCell>{order.retailer?.name || 'N/A'}</TableCell>
               <TableCell>{formatCurrency(order.amount)}</TableCell>
               <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
               <TableCell>
