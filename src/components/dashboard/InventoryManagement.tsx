@@ -71,76 +71,73 @@ export function InventoryManagement() {
     // Set up real-time subscription for product updates
     const channel = supabase
       .channel('inventory-changes')
-      .on('postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'scraped_products'
-        }, 
-        (payload: RealtimePayload) => {
-          console.log('Product update received:', payload);
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'scraped_products'
+      }, (payload: RealtimePayload) => {
+        console.log('Product update received:', payload);
+        
+        // Visual indicator for real-time updates
+        if (payload.new && payload.new.id) {
+          setRealTimeUpdates(prev => ({ ...prev, [payload.new.id]: true }));
           
-          // Visual indicator for real-time updates
-          if (payload.new && payload.new.id) {
-            setRealTimeUpdates(prev => ({ ...prev, [payload.new.id]: true }));
-            
-            // Reset the visual indicator after 3 seconds
-            setTimeout(() => {
-              setRealTimeUpdates(prev => {
-                const updated = {...prev};
-                delete updated[payload.new.id];
-                return updated;
-              });
-            }, 3000);
-          }
+          // Reset the visual indicator after 3 seconds
+          setTimeout(() => {
+            setRealTimeUpdates(prev => {
+              const updated = {...prev};
+              delete updated[payload.new.id];
+              return updated;
+            });
+          }, 3000);
+        }
+        
+        if (payload.eventType === 'INSERT') {
+          setProducts(current => [...current, payload.new as Product]);
           
-          if (payload.eventType === 'INSERT') {
-            setProducts(current => [...current, payload.new as Product]);
-            
-            // Check if new product is low stock
-            if ((payload.new.stock_quantity !== null && payload.new.stock_quantity <= 10) || 
-                payload.new.in_stock === false) {
-              setLowStockItems(current => [...current, payload.new as Product]);
-            }
-          } 
-          else if (payload.eventType === 'UPDATE') {
-            setProducts(current => 
-              current.map(product => 
-                product.id === payload.new.id ? { ...product, ...payload.new } : product
-              )
-            );
-            
-            // Update low stock items
-            const isLowStock = (payload.new.stock_quantity !== null && payload.new.stock_quantity <= 10) || 
-                              payload.new.in_stock === false;
-            
-            if (isLowStock) {
-              setLowStockItems(current => {
-                const exists = current.some(item => item.id === payload.new.id);
-                if (exists) {
-                  return current.map(item => 
-                    item.id === payload.new.id ? { ...item, ...payload.new } : item
-                  );
-                } else {
-                  return [...current, payload.new as Product];
-                }
-              });
-            } else {
-              setLowStockItems(current => 
-                current.filter(item => item.id !== payload.new.id)
-              );
-            }
+          // Check if new product is low stock
+          if ((payload.new.stock_quantity !== null && payload.new.stock_quantity <= 10) || 
+              payload.new.in_stock === false) {
+            setLowStockItems(current => [...current, payload.new as Product]);
           }
-          else if (payload.eventType === 'DELETE') {
-            setProducts(current => 
-              current.filter(product => product.id !== payload.old?.id)
-            );
+        } 
+        else if (payload.eventType === 'UPDATE') {
+          setProducts(current => 
+            current.map(product => 
+              product.id === payload.new.id ? { ...product, ...payload.new } : product
+            )
+          );
+          
+          // Update low stock items
+          const isLowStock = (payload.new.stock_quantity !== null && payload.new.stock_quantity <= 10) || 
+                            payload.new.in_stock === false;
+          
+          if (isLowStock) {
+            setLowStockItems(current => {
+              const exists = current.some(item => item.id === payload.new.id);
+              if (exists) {
+                return current.map(item => 
+                  item.id === payload.new.id ? { ...item, ...payload.new } : item
+                );
+              } else {
+                return [...current, payload.new as Product];
+              }
+            });
+          } else {
             setLowStockItems(current => 
-              current.filter(product => product.id !== payload.old?.id)
+              current.filter(item => item.id !== payload.new.id)
             );
           }
         }
-      )
+        else if (payload.eventType === 'DELETE') {
+          setProducts(current => 
+            current.filter(product => product.id !== payload.old?.id)
+          );
+          setLowStockItems(current => 
+            current.filter(product => product.id !== payload.old?.id)
+          );
+        }
+      })
       .subscribe();
     
     return () => {

@@ -48,21 +48,18 @@ export const InventoryBadge = ({
     
     const channel = supabase
       .channel(`inventory-badge-${productId}`)
-      .on('postgres_changes', 
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'scraped_products',
-          filter: `id=eq.${productId}`
-        }, 
-        (payload: RealtimePayload) => {
-          console.log('Real-time inventory update received:', payload);
-          if (payload.new) {
-            setInStock(payload.new.in_stock !== null ? payload.new.in_stock : true);
-            setQuantity(payload.new.stock_quantity);
-          }
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'scraped_products',
+        filter: `id=eq.${productId}`
+      }, (payload: RealtimePayload) => {
+        console.log('Real-time inventory update received:', payload);
+        if (payload.new) {
+          setInStock(payload.new.in_stock !== null ? payload.new.in_stock : true);
+          setQuantity(payload.new.stock_quantity);
         }
-      )
+      })
       .subscribe();
       
     return () => {
