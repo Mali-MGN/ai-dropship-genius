@@ -23,6 +23,23 @@ import { ExternalLink, MoreHorizontal, RefreshCw, Eye, Bell } from "lucide-react
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
+// Define type for the real-time payload
+interface RealtimePayload {
+  new: {
+    id: string;
+    order_id?: string;
+    status?: string;
+    [key: string]: any;
+  };
+  old?: {
+    id: string;
+    order_id?: string;
+    status?: string;
+    [key: string]: any;
+  };
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+}
+
 export interface Order {
   id: string;
   order_id: string;
@@ -97,7 +114,7 @@ export const OrdersTable = () => {
         schema: 'public', 
         table: 'user_orders',
         filter: user ? `user_id=eq.${user.id}` : undefined
-      }, (payload) => {
+      }, (payload: RealtimePayload) => {
         console.log('Order table change received!', payload);
         
         // Visual indicator for real-time updates
@@ -142,17 +159,17 @@ export const OrdersTable = () => {
             });
             
             // Create a notification in the database
-            createStatusChangeNotification(payload.new.order_id, payload.new.id, payload.old.status, payload.new.status);
+            createStatusChangeNotification(payload.new.order_id as string, payload.new.id, payload.old.status as string, payload.new.status as string);
           }
         } 
         else if (payload.eventType === 'DELETE') {
           setOrders(currentOrders => 
-            currentOrders.filter(order => order.id !== payload.old.id)
+            currentOrders.filter(order => order.id !== payload.old?.id)
           );
           
           toast({
             title: "Order Removed",
-            description: `Order #${payload.old.order_id} has been removed`,
+            description: `Order #${payload.old?.order_id} has been removed`,
             variant: "destructive",
           });
         }

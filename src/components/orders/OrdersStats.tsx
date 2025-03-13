@@ -6,6 +6,21 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { RefreshCw } from "lucide-react";
 
+// Define type for the real-time payload
+interface RealtimePayload {
+  new: {
+    id?: string;
+    status?: string;
+    [key: string]: any;
+  };
+  old?: {
+    id?: string;
+    status?: string;
+    [key: string]: any;
+  };
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+}
+
 export const OrdersStats = () => {
   const [stats, setStats] = useState({
     newOrdersCount: 0,
@@ -60,7 +75,7 @@ export const OrdersStats = () => {
         schema: 'public', 
         table: 'user_orders',
         filter: user ? `user_id=eq.${user.id}` : undefined
-      }, (payload) => {
+      }, (payload: RealtimePayload) => {
         console.log('Order stats change received:', payload);
         
         // Visual indicator for updated stats

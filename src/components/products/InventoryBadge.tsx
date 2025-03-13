@@ -3,6 +3,21 @@ import { StatusBadge } from "@/components/orders/StatusBadge";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+// Define type for the real-time payload
+interface RealtimePayload {
+  new: {
+    id: string;
+    in_stock?: boolean;
+    stock_quantity?: number;
+    [key: string]: any;
+  };
+  old?: {
+    id: string;
+    [key: string]: any;
+  };
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+}
+
 interface InventoryBadgeProps {
   inStock: boolean;
   quantity: number | null;
@@ -38,7 +53,7 @@ export const InventoryBadge = ({
         schema: 'public',
         table: 'scraped_products',
         filter: `id=eq.${productId}`
-      }, (payload) => {
+      }, (payload: RealtimePayload) => {
         console.log('Real-time inventory update received:', payload);
         if (payload.new) {
           setInStock(payload.new.in_stock !== null ? payload.new.in_stock : true);

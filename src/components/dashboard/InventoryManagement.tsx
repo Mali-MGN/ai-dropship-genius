@@ -10,6 +10,19 @@ import { formatCurrency } from "@/lib/utils";
 import { RefreshCw, Search, AlertTriangle, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
+// Define type for the real-time payload
+interface RealtimePayload {
+  new: {
+    id: string;
+    [key: string]: any;
+  };
+  old?: {
+    id: string;
+    [key: string]: any;
+  };
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+}
+
 interface Product {
   id: string;
   name: string;
@@ -63,7 +76,7 @@ export function InventoryManagement() {
         event: '*',
         schema: 'public',
         table: 'scraped_products'
-      }, (payload) => {
+      }, (payload: RealtimePayload) => {
         console.log('Product update received:', payload);
         
         // Visual indicator for real-time updates
@@ -119,10 +132,10 @@ export function InventoryManagement() {
         }
         else if (payload.eventType === 'DELETE') {
           setProducts(current => 
-            current.filter(product => product.id !== payload.old.id)
+            current.filter(product => product.id !== payload.old?.id)
           );
           setLowStockItems(current => 
-            current.filter(product => product.id !== payload.old.id)
+            current.filter(product => product.id !== payload.old?.id)
           );
         }
       })
