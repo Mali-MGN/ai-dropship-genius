@@ -70,38 +70,42 @@ export const OrdersStats = () => {
     // Set up real-time subscription for orders table
     const ordersChannel = supabase
       .channel('orders-stats-changes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'user_orders',
-        filter: user ? `user_id=eq.${user.id}` : undefined
-      }, (payload: RealtimePayload) => {
-        console.log('Order stats change received:', payload);
-        
-        // Visual indicator for updated stats
-        const statusKey = payload.new?.status || payload.old?.status;
-        
-        if (statusKey) {
-          const updateKey = statusKey === 'pending' ? 'newOrdersCount' : 
+      .on(
+        'postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'user_orders',
+          filter: user ? `user_id=eq.${user.id}` : undefined
+        }, 
+        (payload: RealtimePayload) => {
+          console.log('Order stats change received:', payload);
+          
+          // Visual indicator for updated stats
+          const statusKey = payload.new?.status || payload.old?.status;
+          
+          if (statusKey) {
+            const updateKey = statusKey === 'pending' ? 'newOrdersCount' : 
                           statusKey === 'processing' ? 'processingCount' :
                           statusKey === 'delivered' ? 'deliveredCount' : 
                           'cancelledCount';
                           
-          setUpdatedStats({...updatedStats, [updateKey]: true});
+            setUpdatedStats({...updatedStats, [updateKey]: true});
+            
+            // Reset the visual indicator after 2 seconds
+            setTimeout(() => {
+              setUpdatedStats(current => {
+                const updated = {...current};
+                delete updated[updateKey];
+                return updated;
+              });
+            }, 2000);
+          }
           
-          // Reset the visual indicator after 2 seconds
-          setTimeout(() => {
-            setUpdatedStats(current => {
-              const updated = {...current};
-              delete updated[updateKey];
-              return updated;
-            });
-          }, 2000);
+          // Refetch stats when orders change
+          fetchOrderStats();
         }
-        
-        // Refetch stats when orders change
-        fetchOrderStats();
-      })
+      )
       .subscribe();
     
     return () => {

@@ -1,79 +1,72 @@
-
-import { StatusBadge } from "@/components/orders/StatusBadge";
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 
-// Define type for the real-time payload
-interface RealtimePayload {
-  new: {
-    id: string;
-    in_stock?: boolean;
-    stock_quantity?: number;
-    [key: string]: any;
-  };
-  old?: {
-    id: string;
-    [key: string]: any;
-  };
-  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
-}
-
 interface InventoryBadgeProps {
-  inStock: boolean;
-  quantity: number | null;
-  lowStockThreshold?: number;
-  className?: string;
-  productId?: string;
+  productId: string;
 }
 
-export const InventoryBadge = ({ 
-  inStock: initialInStock, 
-  quantity: initialQuantity, 
-  lowStockThreshold = 10,
-  className = "",
-  productId 
-}: InventoryBadgeProps) => {
-  const [inStock, setInStock] = useState(initialInStock);
-  const [quantity, setQuantity] = useState(initialQuantity);
-  
+export const InventoryBadge: React.FC<InventoryBadgeProps> = ({ productId }) => {
+  const [inStock, setInStock] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchInventoryStatus = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('scraped_products')
+        .select('in_stock')
+        .eq('id', productId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching inventory status:", error);
+        setLoading(false);
+        return;
+      }
+
+      setInStock(data?.in_stock ?? false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Update local state when props change
-    setInStock(initialInStock);
-    setQuantity(initialQuantity);
-  }, [initialInStock, initialQuantity]);
-  
-  useEffect(() => {
-    // Only set up real-time monitoring if we have a productId
-    if (!productId) return;
-    
-    const channel = supabase
-      .channel(`inventory-badge-${productId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'scraped_products',
-        filter: `id=eq.${productId}`
-      }, (payload: RealtimePayload) => {
-        console.log('Real-time inventory update received:', payload);
-        if (payload.new) {
-          setInStock(payload.new.in_stock !== null ? payload.new.in_stock : true);
-          setQuantity(payload.new.stock_quantity);
+    fetchInventoryStatus();
+
+    const inventoryChannel = supabase
+      .channel('inventory-badge-changes')
+      .on(
+        'postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'scraped_products',
+          filter: `id=eq.${productId}`
+        },
+        (payload) => {
+          console.log('Inventory change for badge:', payload);
+          fetchInventoryStatus();
         }
-      })
+      )
       .subscribe();
-      
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(inventoryChannel);
     };
   }, [productId]);
-  
-  if (!inStock || quantity === 0) {
-    return <StatusBadge status="out of stock" variant="inventory" className={className} />;
+
+  if (loading) {
+    return <Badge variant="secondary">Loading...</Badge>;
   }
-  
-  if (quantity !== null && quantity <= lowStockThreshold) {
-    return <StatusBadge status="low stock" variant="inventory" className={className} />;
+
+  if (inStock === null) {
+    return <Badge variant="destructive">Error</Badge>;
   }
-  
-  return <StatusBadge status="in stock" variant="inventory" className={className} />;
+
+  return (
+    <Badge variant={inStock ? "default" : "destructive"}>
+      {inStock ? "In Stock" : "Out of Stock"}
+    </Badge>
+  );
 };
