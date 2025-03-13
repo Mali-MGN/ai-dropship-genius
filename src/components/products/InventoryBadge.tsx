@@ -1,19 +1,56 @@
 
 import { StatusBadge } from "@/components/orders/StatusBadge";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface InventoryBadgeProps {
   inStock: boolean;
   quantity: number | null;
   lowStockThreshold?: number;
   className?: string;
+  productId?: string;
 }
 
 export const InventoryBadge = ({ 
-  inStock, 
-  quantity, 
+  inStock: initialInStock, 
+  quantity: initialQuantity, 
   lowStockThreshold = 10,
-  className = "" 
+  className = "",
+  productId 
 }: InventoryBadgeProps) => {
+  const [inStock, setInStock] = useState(initialInStock);
+  const [quantity, setQuantity] = useState(initialQuantity);
+  
+  useEffect(() => {
+    // Update local state when props change
+    setInStock(initialInStock);
+    setQuantity(initialQuantity);
+  }, [initialInStock, initialQuantity]);
+  
+  useEffect(() => {
+    // Only set up real-time monitoring if we have a productId
+    if (!productId) return;
+    
+    const channel = supabase
+      .channel(`inventory-badge-${productId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'scraped_products',
+        filter: `id=eq.${productId}`
+      }, (payload) => {
+        console.log('Real-time inventory update received:', payload);
+        if (payload.new) {
+          setInStock(payload.new.in_stock !== null ? payload.new.in_stock : true);
+          setQuantity(payload.new.stock_quantity);
+        }
+      })
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [productId]);
   
   if (!inStock || quantity === 0) {
     return <StatusBadge status="out of stock" variant="inventory" className={className} />;

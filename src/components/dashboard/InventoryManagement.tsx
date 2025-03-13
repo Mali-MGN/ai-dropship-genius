@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { InventoryBadge } from "@/components/products/InventoryBadge";
 import { formatCurrency } from "@/lib/utils";
-import { RefreshCw, Search, AlertTriangle } from "lucide-react";
+import { RefreshCw, Search, AlertTriangle, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Product {
@@ -24,6 +25,7 @@ export function InventoryManagement() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [lowStockItems, setLowStockItems] = useState<Product[]>([]);
+  const [realTimeUpdates, setRealTimeUpdates] = useState<{[key: string]: boolean}>({});
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -63,6 +65,20 @@ export function InventoryManagement() {
         table: 'scraped_products'
       }, (payload) => {
         console.log('Product update received:', payload);
+        
+        // Visual indicator for real-time updates
+        if (payload.new && payload.new.id) {
+          setRealTimeUpdates(prev => ({ ...prev, [payload.new.id]: true }));
+          
+          // Reset the visual indicator after 3 seconds
+          setTimeout(() => {
+            setRealTimeUpdates(prev => {
+              const updated = {...prev};
+              delete updated[payload.new.id];
+              return updated;
+            });
+          }, 3000);
+        }
         
         if (payload.eventType === 'INSERT') {
           setProducts(current => [...current, payload.new as Product]);
@@ -125,7 +141,13 @@ export function InventoryManagement() {
   return (
     <Card className="col-span-2">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-xl">Inventory Management</CardTitle>
+        <div>
+          <CardTitle className="text-xl">Inventory Management</CardTitle>
+          <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+            <Bell className="h-4 w-4" />
+            <span>Real-time updates enabled</span>
+          </div>
+        </div>
         <Button variant="outline" size="sm" onClick={fetchProducts} disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -182,7 +204,10 @@ export function InventoryManagement() {
                   </TableRow>
                 ) : (
                   filteredProducts.map((product) => (
-                    <TableRow key={product.id}>
+                    <TableRow 
+                      key={product.id}
+                      className={realTimeUpdates[product.id] ? 'bg-primary-50 dark:bg-primary-950 transition-colors duration-1000' : ''}
+                    >
                       <TableCell className="flex items-center gap-2">
                         {product.image_url && (
                           <img 
@@ -191,17 +216,27 @@ export function InventoryManagement() {
                             className="w-8 h-8 object-cover rounded-md"
                           />
                         )}
-                        <span className="font-medium">{product.name}</span>
+                        <div>
+                          <span className="font-medium">{product.name}</span>
+                          {realTimeUpdates[product.id] && (
+                            <Badge variant="outline" className="ml-2 bg-primary-100 text-xs">
+                              Updated
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>{product.price ? formatCurrency(product.price) : 'N/A'}</TableCell>
                       <TableCell>{product.category || 'Uncategorized'}</TableCell>
                       <TableCell>
                         <InventoryBadge 
                           inStock={product.in_stock !== null ? product.in_stock : true} 
-                          quantity={product.stock_quantity} 
+                          quantity={product.stock_quantity}
+                          productId={product.id}
                         />
                       </TableCell>
-                      <TableCell>{product.stock_quantity !== null ? product.stock_quantity : 'N/A'}</TableCell>
+                      <TableCell className={realTimeUpdates[product.id] ? 'font-medium text-primary' : ''}>
+                        {product.stock_quantity !== null ? product.stock_quantity : 'N/A'}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

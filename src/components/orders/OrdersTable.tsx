@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/orders/StatusBadge";
-import { ExternalLink, MoreHorizontal, RefreshCw, Eye } from "lucide-react";
+import { ExternalLink, MoreHorizontal, RefreshCw, Eye, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
@@ -44,6 +44,7 @@ export interface Order {
 export const OrdersTable = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [realTimeStatus, setRealTimeStatus] = useState<{[key: string]: boolean}>({});
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -99,10 +100,30 @@ export const OrdersTable = () => {
       }, (payload) => {
         console.log('Order table change received!', payload);
         
+        // Visual indicator for real-time updates
+        if (payload.new && payload.new.id) {
+          setRealTimeStatus({...realTimeStatus, [payload.new.id]: true});
+          
+          // Reset the visual indicator after 3 seconds
+          setTimeout(() => {
+            setRealTimeStatus(current => {
+              const updated = {...current};
+              delete updated[payload.new.id];
+              return updated;
+            });
+          }, 3000);
+        }
+        
         // Handle different types of changes
         if (payload.eventType === 'INSERT') {
           // Fetch the complete order with relations instead of using payload.new directly
           fetchOrders();
+          
+          toast({
+            title: "New Order Received",
+            description: `Order #${payload.new.order_id} has been created`,
+            variant: "default",
+          });
         } 
         else if (payload.eventType === 'UPDATE') {
           setOrders(currentOrders => 
@@ -119,12 +140,21 @@ export const OrdersTable = () => {
               title: `Order #${payload.new.order_id} Updated`,
               description: `Status changed from ${payload.old.status} to ${payload.new.status}`,
             });
+            
+            // Create a notification in the database
+            createStatusChangeNotification(payload.new.order_id, payload.new.id, payload.old.status, payload.new.status);
           }
         } 
         else if (payload.eventType === 'DELETE') {
           setOrders(currentOrders => 
             currentOrders.filter(order => order.id !== payload.old.id)
           );
+          
+          toast({
+            title: "Order Removed",
+            description: `Order #${payload.old.order_id} has been removed`,
+            variant: "destructive",
+          });
         }
       })
       .subscribe();
@@ -133,6 +163,25 @@ export const OrdersTable = () => {
       supabase.removeChannel(channel);
     };
   }, [user, toast]);
+
+  const createStatusChangeNotification = async (orderId: string, referenceId: string, oldStatus: string, newStatus: string) => {
+    if (!user) return;
+    
+    try {
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: user.id,
+          type: 'order_status_change',
+          title: `Order Status Updated`,
+          message: `Order #${orderId} status changed from ${oldStatus} to ${newStatus}`,
+          reference_id: referenceId,
+          is_read: false
+        });
+    } catch (error) {
+      console.error('Error creating notification:', error);
+    }
+  };
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
@@ -191,7 +240,11 @@ export const OrdersTable = () => {
 
   return (
     <div className="overflow-x-auto">
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-between mb-4">
+        <div className="text-sm text-muted-foreground flex items-center gap-1">
+          <Bell className="h-4 w-4" />
+          <span>Real-time updates enabled</span>
+        </div>
         <Button
           variant="outline"
           size="sm"
@@ -218,7 +271,10 @@ export const OrdersTable = () => {
         </TableHeader>
         <TableBody>
           {orders.map((order) => (
-            <TableRow key={order.id} className="group">
+            <TableRow 
+              key={order.id} 
+              className={`group ${realTimeStatus[order.id] ? 'bg-primary-50 dark:bg-primary-950 transition-colors duration-1000' : ''}`}
+            >
               <TableCell className="font-medium">{order.order_id}</TableCell>
               <TableCell>{order.product?.name}</TableCell>
               <TableCell>{order.customer_name}</TableCell>
