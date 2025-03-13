@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -70,8 +69,7 @@ export const OrdersStats = () => {
     // Set up real-time subscription for orders table
     const ordersChannel = supabase
       .channel('orders-stats-changes')
-      .on(
-        'postgres_changes', 
+      .on('postgres_changes', 
         { 
           event: '*', 
           schema: 'public', 

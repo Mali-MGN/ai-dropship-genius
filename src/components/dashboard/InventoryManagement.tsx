@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -72,8 +71,7 @@ export function InventoryManagement() {
     // Set up real-time subscription for product updates
     const channel = supabase
       .channel('inventory-changes')
-      .on(
-        'postgres_changes',
+      .on('postgres_changes',
         {
           event: '*',
           schema: 'public',

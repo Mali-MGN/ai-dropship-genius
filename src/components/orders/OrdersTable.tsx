@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -108,8 +109,7 @@ export const OrdersTable = () => {
     // Set up a realtime subscription for orders
     const channel = supabase
       .channel('orders-table-changes')
-      .on(
-        'postgres_changes', 
+      .on('postgres_changes', 
         { 
           event: '*', 
           schema: 'public', 

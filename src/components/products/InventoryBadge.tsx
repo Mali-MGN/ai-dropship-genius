@@ -48,8 +48,7 @@ export const InventoryBadge = ({
     
     const channel = supabase
       .channel(`inventory-badge-${productId}`)
-      .on(
-        'postgres_changes', 
+      .on('postgres_changes', 
         {
           event: 'UPDATE',
           schema: 'public',
