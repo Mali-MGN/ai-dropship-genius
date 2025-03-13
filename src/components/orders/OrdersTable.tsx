@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -109,71 +108,75 @@ export const OrdersTable = () => {
     // Set up a realtime subscription for orders
     const channel = supabase
       .channel('orders-table-changes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'user_orders',
-        filter: user ? `user_id=eq.${user.id}` : undefined
-      }, (payload: RealtimePayload) => {
-        console.log('Order table change received!', payload);
-        
-        // Visual indicator for real-time updates
-        if (payload.new && payload.new.id) {
-          setRealTimeStatus({...realTimeStatus, [payload.new.id]: true});
+      .on(
+        'postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'user_orders',
+          filter: user ? `user_id=eq.${user.id}` : undefined
+        }, 
+        (payload: RealtimePayload) => {
+          console.log('Order table change received!', payload);
           
-          // Reset the visual indicator after 3 seconds
-          setTimeout(() => {
-            setRealTimeStatus(current => {
-              const updated = {...current};
-              delete updated[payload.new.id];
-              return updated;
-            });
-          }, 3000);
-        }
-        
-        // Handle different types of changes
-        if (payload.eventType === 'INSERT') {
-          // Fetch the complete order with relations instead of using payload.new directly
-          fetchOrders();
-          
-          toast({
-            title: "New Order Received",
-            description: `Order #${payload.new.order_id} has been created`,
-            variant: "default",
-          });
-        } 
-        else if (payload.eventType === 'UPDATE') {
-          setOrders(currentOrders => 
-            currentOrders.map(order => 
-              order.id === payload.new.id 
-                ? { ...order, ...payload.new } 
-                : order
-            )
-          );
-          
-          // Show a toast notification for status changes
-          if (payload.old && payload.new.status !== payload.old.status) {
-            toast({
-              title: `Order #${payload.new.order_id} Updated`,
-              description: `Status changed from ${payload.old.status} to ${payload.new.status}`,
-            });
+          // Visual indicator for real-time updates
+          if (payload.new && payload.new.id) {
+            setRealTimeStatus({...realTimeStatus, [payload.new.id]: true});
             
-            // Create a notification in the database
-            createStatusChangeNotification(payload.new.order_id as string, payload.new.id, payload.old.status as string, payload.new.status as string);
+            // Reset the visual indicator after 3 seconds
+            setTimeout(() => {
+              setRealTimeStatus(current => {
+                const updated = {...current};
+                delete updated[payload.new.id];
+                return updated;
+              });
+            }, 3000);
           }
-        } 
-        else if (payload.eventType === 'DELETE') {
-          setOrders(currentOrders => 
-            currentOrders.filter(order => order.id !== payload.old?.id)
-          );
           
-          toast({
-            title: "Order Removed",
-            description: `Order #${payload.old?.order_id} has been removed`,
-            variant: "destructive",
-          });
+          // Handle different types of changes
+          if (payload.eventType === 'INSERT') {
+            // Fetch the complete order with relations instead of using payload.new directly
+            fetchOrders();
+            
+            toast({
+              title: "New Order Received",
+              description: `Order #${payload.new.order_id} has been created`,
+              variant: "default",
+            });
+          } 
+          else if (payload.eventType === 'UPDATE') {
+            setOrders(currentOrders => 
+              currentOrders.map(order => 
+                order.id === payload.new.id 
+                  ? { ...order, ...payload.new } 
+                  : order
+              )
+            );
+            
+            // Show a toast notification for status changes
+            if (payload.old && payload.new.status !== payload.old.status) {
+              toast({
+                title: `Order #${payload.new.order_id} Updated`,
+                description: `Status changed from ${payload.old.status} to ${payload.new.status}`,
+              });
+              
+              // Create a notification in the database
+              createStatusChangeNotification(payload.new.order_id as string, payload.new.id, payload.old.status as string, payload.new.status as string);
+            }
+          } 
+          else if (payload.eventType === 'DELETE') {
+            setOrders(currentOrders => 
+              currentOrders.filter(order => order.id !== payload.old?.id)
+            );
+            
+            toast({
+              title: "Order Removed",
+              description: `Order #${payload.old?.order_id} has been removed`,
+              variant: "destructive",
+            });
+          }
         }
-      })
+      )
       .subscribe();
     
     return () => {
