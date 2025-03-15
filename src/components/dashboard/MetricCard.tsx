@@ -10,6 +10,7 @@ interface MetricCardProps {
   percentageChange?: number;
   positiveChange?: boolean;
   className?: string;
+  loading?: boolean; // Add loading prop to the interface
 }
 
 export function MetricCard({
@@ -19,6 +20,7 @@ export function MetricCard({
   percentageChange,
   positiveChange = true,
   className,
+  loading,
 }: MetricCardProps) {
   return (
     <Card className={cn("overflow-hidden", className)}>
@@ -32,7 +34,9 @@ export function MetricCard({
             )}
             <div>
               <p className="text-sm font-medium text-muted-foreground">{title}</p>
-              <h3 className="text-2xl font-semibold tracking-tight">{value}</h3>
+              <h3 className="text-2xl font-semibold tracking-tight">
+                {loading ? "Loading..." : value}
+              </h3>
             </div>
           </div>
 
