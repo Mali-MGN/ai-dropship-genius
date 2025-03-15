@@ -38,7 +38,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Define type for the real-time payload
 interface RealtimePayload {
   new: {
     id: string;
@@ -76,14 +75,14 @@ export interface Order {
 export const OrdersTable = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null); // Order ID being updated
+  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
   const [realTimeStatus, setRealTimeStatus] = useState<{[key: string]: boolean}>({});
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [totalOrders, setTotalOrders] = useState(0);
   const [filterStatus, setFilterStatus] = useState('');
   const [sortField, setSortField] = useState('order_date');
-  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
+  const [sortOrder, setSortOrder] = useState('desc');
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -112,15 +111,12 @@ export const OrdersTable = () => {
           retailer:retailer_id(name)
         `, { count: 'exact' });
       
-      // Apply filtering if status filter is set
       if (filterStatus) {
         query = query.eq('status', filterStatus);
       }
       
-      // Apply sorting
       query = query.order(sortField, { ascending: sortOrder === 'asc' });
       
-      // Apply pagination
       query = query.range(from, to);
       
       const { data, error, count } = await query;
@@ -146,7 +142,6 @@ export const OrdersTable = () => {
   }, [page, user, filterStatus, sortField, sortOrder]);
   
   useEffect(() => {    
-    // Set up a realtime subscription for orders
     const channel = supabase
       .channel('orders-table-changes')
       .on(
@@ -160,11 +155,9 @@ export const OrdersTable = () => {
         (payload: RealtimePayload) => {
           console.log('Order table change received!', payload);
           
-          // Visual indicator for real-time updates
           if (payload.new && payload.new.id) {
             setRealTimeStatus({...realTimeStatus, [payload.new.id]: true});
             
-            // Reset the visual indicator after 3 seconds
             setTimeout(() => {
               setRealTimeStatus(current => {
                 const updated = {...current};
@@ -174,9 +167,7 @@ export const OrdersTable = () => {
             }, 3000);
           }
           
-          // Handle different types of changes
           if (payload.eventType === 'INSERT') {
-            // Fetch the complete order with relations instead of using payload.new directly
             fetchOrders();
             
             toast({
@@ -194,14 +185,12 @@ export const OrdersTable = () => {
               )
             );
             
-            // Show a toast notification for status changes
             if (payload.old && payload.new.status !== payload.old.status) {
               toast({
                 title: `Order #${payload.new.order_id} Updated`,
                 description: `Status changed from ${payload.old.status} to ${payload.new.status}`,
               });
               
-              // Create a notification in the database
               createStatusChangeNotification(payload.new.order_id as string, payload.new.id, payload.old.status as string, payload.new.status as string);
             }
           } 
@@ -245,9 +234,8 @@ export const OrdersTable = () => {
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
-    setUpdatingOrder(orderId); // Set the updating state
+    setUpdatingOrder(orderId);
     try {
-      // Optimistic update for better UX
       setOrders(currentOrders => 
         currentOrders.map(order => 
           order.id === orderId 
@@ -274,10 +262,9 @@ export const OrdersTable = () => {
         variant: "destructive",
       });
       
-      // Revert to original data if there was an error
       fetchOrders();
     } finally {
-      setUpdatingOrder(null); // Clear the updating state
+      setUpdatingOrder(null);
     }
   };
 
@@ -423,7 +410,6 @@ export const OrdersTable = () => {
                       </DropdownMenuItem>
                     )}
                     
-                    {/* Status update options */}
                     <DropdownMenuItem 
                       onClick={() => updateOrderStatus(order.id, 'processing')}
                       disabled={order.status === 'processing' || updatingOrder === order.id}
@@ -473,12 +459,10 @@ export const OrdersTable = () => {
               
               {Array.from({ length: totalPages }, (_, i) => i + 1)
                 .filter(p => {
-                  // Show first page, last page, current page, and pages around current
                   return p === 1 || p === totalPages || 
                          (p >= page - 1 && p <= page + 1);
                 })
                 .map((p, i, arr) => {
-                  // If there's a gap, show ellipsis
                   const showEllipsisBefore = i > 0 && arr[i-1] !== p - 1;
                   const showEllipsisAfter = i < arr.length - 1 && arr[i+1] !== p + 1;
                   
