@@ -142,6 +142,8 @@ export const OrdersTable = () => {
   }, [page, user, filterStatus, sortField, sortOrder]);
   
   useEffect(() => {    
+    if (!user) return;
+    
     const channel = supabase
       .channel('orders-table-changes')
       .on(
@@ -150,58 +152,62 @@ export const OrdersTable = () => {
           event: '*', 
           schema: 'public', 
           table: 'user_orders',
-          filter: user ? `user_id=eq.${user.id}` : undefined
+          filter: `user_id=eq.${user.id}`
         }, 
-        (payload: RealtimePayload) => {
+        (payload: any) => {
           console.log('Order table change received!', payload);
           
-          if (payload.new && payload.new.id) {
-            setRealTimeStatus({...realTimeStatus, [payload.new.id]: true});
+          const newData = payload.new;
+          const oldData = payload.old;
+          const eventType = payload.eventType;
+          
+          if (newData && newData.id) {
+            setRealTimeStatus(prev => ({...prev, [newData.id]: true}));
             
             setTimeout(() => {
               setRealTimeStatus(current => {
                 const updated = {...current};
-                delete updated[payload.new.id];
+                delete updated[newData.id];
                 return updated;
               });
             }, 3000);
           }
           
-          if (payload.eventType === 'INSERT') {
+          if (eventType === 'INSERT') {
             fetchOrders();
             
             toast({
               title: "New Order Received",
-              description: `Order #${payload.new.order_id} has been created`,
+              description: `Order #${newData.order_id} has been created`,
               variant: "default",
             });
           } 
-          else if (payload.eventType === 'UPDATE') {
+          else if (eventType === 'UPDATE') {
             setOrders(currentOrders => 
               currentOrders.map(order => 
-                order.id === payload.new.id 
-                  ? { ...order, ...payload.new } 
+                order.id === newData.id 
+                  ? { ...order, ...newData } 
                   : order
               )
             );
             
-            if (payload.old && payload.new.status !== payload.old.status) {
+            if (oldData && newData.status !== oldData.status) {
               toast({
-                title: `Order #${payload.new.order_id} Updated`,
-                description: `Status changed from ${payload.old.status} to ${payload.new.status}`,
+                title: `Order #${newData.order_id} Updated`,
+                description: `Status changed from ${oldData.status} to ${newData.status}`,
               });
               
-              createStatusChangeNotification(payload.new.order_id as string, payload.new.id, payload.old.status as string, payload.new.status as string);
+              createStatusChangeNotification(newData.order_id || '', newData.id, oldData.status || '', newData.status || '');
             }
           } 
-          else if (payload.eventType === 'DELETE') {
+          else if (eventType === 'DELETE') {
             setOrders(currentOrders => 
-              currentOrders.filter(order => order.id !== payload.old?.id)
+              currentOrders.filter(order => order.id !== oldData?.id)
             );
             
             toast({
               title: "Order Removed",
-              description: `Order #${payload.old?.order_id} has been removed`,
+              description: `Order #${oldData?.order_id} has been removed`,
               variant: "destructive",
             });
           }
@@ -212,7 +218,7 @@ export const OrdersTable = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, toast, realTimeStatus]);
+  }, [user, toast]);
 
   const createStatusChangeNotification = async (orderId: string, referenceId: string, oldStatus: string, newStatus: string) => {
     if (!user) return;
