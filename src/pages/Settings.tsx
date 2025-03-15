@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Separator } from "@/components/ui/separator";
@@ -14,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { PersonalizationSettings } from "@/components/settings/PersonalizationSettings";
+import { SocialConnections } from "@/components/settings/SocialConnections";
 import { UserPreferences } from "@/lib/utils";
 import { 
   User, 
@@ -27,10 +27,6 @@ import {
   LockKeyhole,
   Clock,
   LogOut,
-  Github,
-  Twitter,
-  Facebook,
-  Instagram
 } from "lucide-react";
 
 const Settings = () => {
@@ -109,7 +105,6 @@ const Settings = () => {
               <CardContent className="space-y-6">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
-                    {/* Fix: Use user_metadata.avatar_url instead of avatar_url */}
                     <AvatarImage src={user?.user_metadata?.avatar_url || ""} alt="Profile" />
                     <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
                   </Avatar>
@@ -268,74 +263,11 @@ const Settings = () => {
           <TabsContent value="connected" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Social Media</CardTitle>
-                <CardDescription>Link or unlink your social media accounts</CardDescription>
+                <CardTitle>Connected Accounts</CardTitle>
+                <CardDescription>Manage your linked accounts for personalized recommendations</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Facebook className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <p className="text-sm font-medium">Facebook</p>
-                      <p className="text-xs text-muted-foreground">Not connected</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">Connect</Button>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Twitter className="h-5 w-5 text-blue-400" />
-                    <div>
-                      <p className="text-sm font-medium">Twitter</p>
-                      <p className="text-xs text-muted-foreground">Connected as @username</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">Disconnect</Button>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Instagram className="h-5 w-5 text-pink-500" />
-                    <div>
-                      <p className="text-sm font-medium">Instagram</p>
-                      <p className="text-xs text-muted-foreground">Not connected</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">Connect</Button>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Third-Party Integrations</CardTitle>
-                <CardDescription>Manage connections to third-party services and applications</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Github className="h-5 w-5" />
-                    <div>
-                      <p className="text-sm font-medium">GitHub</p>
-                      <p className="text-xs text-muted-foreground">Connected as @username</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">Disconnect</Button>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-5 w-5 bg-green-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">S</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Shopify</p>
-                      <p className="text-xs text-muted-foreground">Not connected</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">Connect</Button>
-                </div>
+              <CardContent>
+                <SocialConnections />
               </CardContent>
             </Card>
           </TabsContent>
@@ -378,7 +310,7 @@ const Settings = () => {
                       checked={friendPreferences}
                       onCheckedChange={(checked) => setFriendPreferences(checked as boolean)}
                     />
-                    <Label htmlFor="friendPreferences">Allow AI to consider your friends' preferences for gift suggestions.</Label>
+                    <Label htmlFor="friendPreferences">Allow AI to consider your social media and connected apps for better recommendations.</Label>
                   </div>
                 </div>
 

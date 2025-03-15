@@ -82,6 +82,26 @@ serve(async (req) => {
       });
     }
 
+    // Get connected social media accounts
+    const { data: socialConnections, error: socialConnectionsError } = await supabaseClient
+      .from('social_connections')
+      .select('*')
+      .eq('user_id', (await supabaseClient.auth.getUser()).data.user?.id);
+
+    if (socialConnectionsError && socialConnectionsError.code !== 'PGRST116') {
+      console.error('Error getting social connections:', socialConnectionsError);
+    }
+
+    // Get connected third-party apps
+    const { data: thirdPartyConnections, error: thirdPartyConnectionsError } = await supabaseClient
+      .from('third_party_connections')
+      .select('*')
+      .eq('user_id', (await supabaseClient.auth.getUser()).data.user?.id);
+
+    if (thirdPartyConnectionsError && thirdPartyConnectionsError.code !== 'PGRST116') {
+      console.error('Error getting third-party connections:', thirdPartyConnectionsError);
+    }
+
     // Get products that match user's interests and price range
     let query = supabaseClient
       .from('scraped_products')
@@ -145,10 +165,12 @@ serve(async (req) => {
       }
     }
 
-    // Calculate similarity scores based on user interests for better ranking
+    // Calculate similarity scores based on user interests and social connections for better ranking
     const enhancedProducts = personalizedProducts.map(product => {
       let similarityScore = 0;
+      let socialRelevanceScore = 0;
       
+      // Base similarity on matching interests
       if (userPreferences.interests && product.tags) {
         // Count matching tags
         const matchingTags = product.tags.filter(tag => 
@@ -158,16 +180,33 @@ serve(async (req) => {
         similarityScore = matchingTags / Math.max(1, userPreferences.interests.length);
       }
       
+      // Add social relevance if we have connected accounts and social recommendations enabled
+      if (userPreferences.enable_social_recommendations) {
+        // Check if any social connections have interacted with similar products
+        if (socialConnections && socialConnections.length > 0) {
+          // Simple boost for now - in a real implementation, this would analyze the user's social graph
+          socialRelevanceScore = 0.2;
+        }
+        
+        // Check if any connected third-party apps suggest similar products
+        if (thirdPartyConnections && thirdPartyConnections.length > 0) {
+          // Simple boost for now - in a real implementation, this would pull data from APIs
+          socialRelevanceScore += 0.2;
+        }
+      }
+      
       return {
         ...product,
-        similarityScore
+        similarityScore,
+        socialRelevanceScore,
+        totalRelevanceScore: similarityScore + socialRelevanceScore
       };
     });
     
-    // Sort by similarity score and then by trending score
+    // Sort by total relevance score and then by trending score
     enhancedProducts.sort((a, b) => {
-      if (a.similarityScore !== b.similarityScore) {
-        return b.similarityScore - a.similarityScore;
+      if (a.totalRelevanceScore !== b.totalRelevanceScore) {
+        return b.totalRelevanceScore - a.totalRelevanceScore;
       }
       return (b.trending_score || 0) - (a.trending_score || 0);
     });
@@ -179,6 +218,11 @@ serve(async (req) => {
       applied_filters: {
         interests: userPreferences.interests || [],
         price_range: [userPreferences.price_range_min, userPreferences.price_range_max],
+        social_enabled: userPreferences.enable_social_recommendations || false,
+        connected_accounts: {
+          social: socialConnections ? socialConnections.length : 0,
+          third_party: thirdPartyConnections ? thirdPartyConnections.length : 0
+        },
         ...requestParams
       }
     }), {

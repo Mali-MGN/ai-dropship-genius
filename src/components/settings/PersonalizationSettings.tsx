@@ -2,12 +2,11 @@
 import React, { useState, Dispatch, SetStateAction, useEffect } from 'react';
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { CheckCircle, XCircle, Info, Shield, Sparkles } from "lucide-react";
+import { CheckCircle, XCircle, Info, Shield, Sparkles, Users } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { UserPreferences } from '@/lib/utils';
 import { supabase } from "@/integrations/supabase/client";
@@ -38,11 +37,17 @@ export const PersonalizationSettings = ({
   const { user } = useAuth();
   const [newInterest, setNewInterest] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [enableSocialRecommendations, setEnableSocialRecommendations] = useState(false);
+  const [connectedAccounts, setConnectedAccounts] = useState({
+    social: 0,
+    thirdParty: 0
+  });
 
   // Fetch user preferences from the database on component mount
   useEffect(() => {
     if (user) {
       fetchUserPreferences();
+      fetchConnectedAccounts();
     }
   }, [user]);
 
@@ -68,6 +73,7 @@ export const PersonalizationSettings = ({
           },
           enablePersonalization: data.enable_personalization
         });
+        setEnableSocialRecommendations(data.enable_social_recommendations || false);
       } else if (user) {
         // If no preferences exist yet, create a default one
         await createDefaultPreferences();
@@ -82,6 +88,33 @@ export const PersonalizationSettings = ({
     }
   };
 
+  const fetchConnectedAccounts = async () => {
+    try {
+      // Count social connections
+      const { data: socialData, error: socialError } = await supabase
+        .from('social_connections')
+        .select('id', { count: 'exact' })
+        .eq('user_id', user?.id);
+        
+      if (socialError && socialError.code !== 'PGRST116') throw socialError;
+      
+      // Count third-party connections
+      const { data: thirdPartyData, error: thirdPartyError } = await supabase
+        .from('third_party_connections')
+        .select('id', { count: 'exact' })
+        .eq('user_id', user?.id);
+        
+      if (thirdPartyError && thirdPartyError.code !== 'PGRST116') throw thirdPartyError;
+      
+      setConnectedAccounts({
+        social: socialData?.length || 0,
+        thirdParty: thirdPartyData?.length || 0
+      });
+    } catch (error) {
+      console.error('Error fetching connected accounts:', error);
+    }
+  };
+
   const createDefaultPreferences = async () => {
     try {
       const { error } = await supabase
@@ -91,7 +124,8 @@ export const PersonalizationSettings = ({
           interests: DEFAULT_PREFERENCES.interests,
           price_range_min: DEFAULT_PREFERENCES.priceRange.min,
           price_range_max: DEFAULT_PREFERENCES.priceRange.max,
-          enable_personalization: DEFAULT_PREFERENCES.enablePersonalization
+          enable_personalization: DEFAULT_PREFERENCES.enablePersonalization,
+          enable_social_recommendations: false
         });
 
       if (error) throw error;
@@ -123,6 +157,33 @@ export const PersonalizationSettings = ({
       toast({
         title: "Error",
         description: "Failed to update personalization setting.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSocialRecommendationsToggle = async (enabled: boolean) => {
+    if (!user) return;
+
+    setEnableSocialRecommendations(enabled);
+
+    try {
+      const { error } = await supabase
+        .from('user_preferences')
+        .update({ enable_social_recommendations: enabled })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Setting Updated",
+        description: `Social recommendations ${enabled ? 'enabled' : 'disabled'}.`,
+      });
+    } catch (error) {
+      console.error('Error updating social recommendations setting:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update social recommendations setting.",
         variant: "destructive",
       });
     }
@@ -215,6 +276,7 @@ export const PersonalizationSettings = ({
           price_range_max: preferences.priceRange.max,
           interests: preferences.interests,
           enable_personalization: preferences.enablePersonalization,
+          enable_social_recommendations: enableSocialRecommendations,
           last_updated: new Date().toISOString()
         })
         .eq('user_id', user.id);
@@ -258,6 +320,43 @@ export const PersonalizationSettings = ({
 
         {preferences.enablePersonalization && (
           <>
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="social-recommendations-toggle">Social Recommendations</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Use data from your connected social media accounts and third-party apps
+                  </p>
+                </div>
+                <Switch
+                  id="social-recommendations-toggle"
+                  checked={enableSocialRecommendations}
+                  onCheckedChange={handleSocialRecommendationsToggle}
+                  disabled={disabled || (connectedAccounts.social === 0 && connectedAccounts.thirdParty === 0)}
+                />
+              </div>
+              
+              {(connectedAccounts.social === 0 && connectedAccounts.thirdParty === 0) && (
+                <div className="mt-2 text-sm text-amber-600 flex items-center gap-1">
+                  <Info className="h-4 w-4" />
+                  <span>Connect at least one account in the "Connected" tab to enable social recommendations.</span>
+                </div>
+              )}
+              
+              {enableSocialRecommendations && (connectedAccounts.social > 0 || connectedAccounts.thirdParty > 0) && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <Users className="h-3.5 w-3.5" />
+                    {connectedAccounts.social} social accounts
+                  </Badge>
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <Link className="h-3.5 w-3.5" />
+                    {connectedAccounts.thirdParty} third-party apps
+                  </Badge>
+                </div>
+              )}
+            </div>
+
             <div className="border-t pt-4">
               <Label className="mb-2 block">Your Interests</Label>
               <div className="flex flex-wrap gap-2 mb-3">
@@ -315,7 +414,7 @@ export const PersonalizationSettings = ({
                 <div>
                   <p className="text-sm font-medium">Privacy Information</p>
                   <p className="text-xs text-muted-foreground">
-                    Your preferences are stored securely and only used to enhance your product discovery. 
+                    Your preferences and social connections are stored securely and only used to enhance your product discovery. 
                     You can disable personalization at any time.
                   </p>
                 </div>

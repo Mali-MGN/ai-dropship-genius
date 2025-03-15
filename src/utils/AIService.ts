@@ -11,6 +11,15 @@ interface PersonalizedRecommendationsResponse {
   recommendations: Product[];
   personalized: boolean;
   message: string;
+  applied_filters?: {
+    interests: string[];
+    price_range: [number | null, number | null];
+    social_enabled?: boolean;
+    connected_accounts?: {
+      social: number;
+      third_party: number;
+    };
+  };
 }
 
 interface Product {
@@ -29,6 +38,27 @@ interface Product {
   trending_score?: number;
   is_trending?: boolean;
   profit_margin?: number;
+  similarityScore?: number;
+  socialRelevanceScore?: number;
+  totalRelevanceScore?: number;
+}
+
+interface SocialConnection {
+  id: string;
+  user_id: string;
+  provider: string;
+  provider_id: string;
+  username: string;
+  connected_at: string;
+}
+
+interface ThirdPartyConnection {
+  id: string;
+  user_id: string;
+  provider: string;
+  provider_id: string;
+  username: string;
+  connected_at: string;
 }
 
 export class AIService {
@@ -130,6 +160,113 @@ export class AIService {
       return data;
     } catch (error) {
       console.error('Error getting user preferences:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get connected social media accounts
+   */
+  static async getSocialConnections(): Promise<SocialConnection[]> {
+    try {
+      const { data, error } = await supabase
+        .from('social_connections')
+        .select('*')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+      
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error getting social connections:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get connected third-party applications
+   */
+  static async getThirdPartyConnections(): Promise<ThirdPartyConnection[]> {
+    try {
+      const { data, error } = await supabase
+        .from('third_party_connections')
+        .select('*')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+      
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error getting third-party connections:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Connect a social media account
+   */
+  static async connectSocialAccount(provider: string, providerData: {
+    provider_id: string;
+    username: string;
+  }): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('social_connections')
+        .insert({
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          provider,
+          provider_id: providerData.provider_id,
+          username: providerData.username,
+          connected_at: new Date().toISOString()
+        });
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error(`Error connecting ${provider}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Connect a third-party application
+   */
+  static async connectThirdPartyApp(provider: string, providerData: {
+    provider_id: string;
+    username: string;
+  }): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('third_party_connections')
+        .insert({
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          provider,
+          provider_id: providerData.provider_id,
+          username: providerData.username,
+          connected_at: new Date().toISOString()
+        });
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error(`Error connecting ${provider}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Disconnect a social media account or third-party application
+   */
+  static async disconnectAccount(id: string, type: 'social' | 'third-party'): Promise<void> {
+    try {
+      const tableName = type === 'social' ? 'social_connections' : 'third_party_connections';
+      
+      const { error } = await supabase
+        .from(tableName)
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error disconnecting account:', error);
       throw error;
     }
   }
