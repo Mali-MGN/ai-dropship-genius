@@ -13,15 +13,20 @@ import { supabase } from "@/integrations/supabase/client";
 interface Retailer {
   id: string;
   name: string;
+  logo?: string;
 }
 
 interface RetailerSelectorProps {
   onRetailerSelect: (retailerId: string | null) => void;
+  initialValue?: string | null;
 }
 
-export const RetailerSelector = ({ onRetailerSelect }: RetailerSelectorProps) => {
+export const RetailerSelector = ({ 
+  onRetailerSelect, 
+  initialValue = null 
+}: RetailerSelectorProps) => {
   const [retailers, setRetailers] = useState<Retailer[]>([]);
-  const [selectedRetailer, setSelectedRetailer] = useState<string | null>(null);
+  const [selectedRetailer, setSelectedRetailer] = useState<string | null>(initialValue);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -30,7 +35,7 @@ export const RetailerSelector = ({ onRetailerSelect }: RetailerSelectorProps) =>
       try {
         const { data, error } = await supabase
           .from('integrated_retailers')
-          .select('id, name')
+          .select('id, name, logo')
           .eq('active', true);
         
         if (error) {
@@ -53,6 +58,12 @@ export const RetailerSelector = ({ onRetailerSelect }: RetailerSelectorProps) =>
     fetchRetailers();
   }, []);
 
+  useEffect(() => {
+    if (initialValue) {
+      setSelectedRetailer(initialValue);
+    }
+  }, [initialValue]);
+
   const handleRetailerChange = (value: string) => {
     setSelectedRetailer(value);
     onRetailerSelect(value);
@@ -71,12 +82,29 @@ export const RetailerSelector = ({ onRetailerSelect }: RetailerSelectorProps) =>
         </SelectTrigger>
         <SelectContent>
           {retailers.map((retailer) => (
-            <SelectItem key={retailer.id} value={retailer.id}>
-              {retailer.name}
+            <SelectItem 
+              key={retailer.id} 
+              value={retailer.id}
+              className="flex items-center py-2"
+            >
+              {retailer.logo ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-5 w-5 flex-shrink-0">
+                    <img 
+                      src={retailer.logo} 
+                      alt={retailer.name} 
+                      className="h-full w-auto object-contain"
+                    />
+                  </div>
+                  <span>{retailer.name}</span>
+                </div>
+              ) : (
+                retailer.name
+              )}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
     </div>
   );
-};
+}

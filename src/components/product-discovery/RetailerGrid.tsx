@@ -35,32 +35,32 @@ export function RetailerGrid({
           {retailers.map((retailer) => (
             <div
               key={retailer.id}
-              className={`p-4 rounded-lg border cursor-pointer transition-all ${
+              className={`p-4 rounded-lg border bg-white dark:bg-gray-800 cursor-pointer transition-all hover:shadow-md ${
                 selectedRetailer === retailer.id 
-                  ? "border-primary bg-primary/5" 
-                  : "hover:bg-accent"
+                  ? "border-primary bg-primary/5 ring-2 ring-primary/20" 
+                  : "hover:bg-gray-50 dark:hover:bg-gray-700"
               }`}
               onClick={() => onSelectRetailer(retailer.id)}
             >
-              <div className="flex flex-col items-center gap-2 text-center">
-                <div className="h-12 w-12 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="h-16 w-full flex items-center justify-center mb-1">
                   <img 
                     src={retailer.logo} 
                     alt={retailer.name} 
                     className="max-h-full max-w-full object-contain"
                   />
                 </div>
-                <div className="font-medium text-sm">{retailer.name}</div>
+                <div className="font-medium">{retailer.name}</div>
                 <Button 
                   size="sm" 
-                  variant="ghost" 
-                  className="w-full text-xs px-2"
+                  variant="outline" 
+                  className="w-full mt-1 gap-1"
                   onClick={(e) => {
                     e.stopPropagation();
                     window.open(retailer.url, '_blank');
                   }}
                 >
-                  <ExternalLink className="h-3 w-3 mr-1" />
+                  <ExternalLink className="h-3.5 w-3.5" />
                   Visit
                 </Button>
               </div>

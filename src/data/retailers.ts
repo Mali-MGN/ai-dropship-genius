@@ -12,21 +12,21 @@ export const retailers: RetailerInfo[] = [
   { 
     id: "aliexpress", 
     name: "AliExpress", 
-    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/AliExpress_logo.svg/1024px-AliExpress_logo.svg.png", 
+    logo: "https://cdn.worldvectorlogo.com/logos/aliexpress-logo.svg", 
     url: "https://www.aliexpress.com/",
     description: "Popular global marketplace with millions of products at competitive prices"
   },
   { 
     id: "amazon", 
     name: "Amazon", 
-    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/2560px-Amazon_logo.svg.png", 
+    logo: "https://cdn.worldvectorlogo.com/logos/amazon-2.svg", 
     url: "https://www.amazon.com/",
     description: "Massive selection and fast shipping options for Prime members"
   },
   { 
     id: "shopify", 
     name: "Shopify", 
-    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Shopify_logo_2018.svg/2560px-Shopify_logo_2018.svg.png", 
+    logo: "https://cdn.worldvectorlogo.com/logos/shopify.svg", 
     url: "https://www.shopify.com/",
     description: "Platform to easily set up your own dropshipping store"
   },
@@ -40,7 +40,7 @@ export const retailers: RetailerInfo[] = [
   { 
     id: "cjdropshipping", 
     name: "CJ Dropshipping", 
-    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSJt5x7xSgSx_6NcHf4dtTrN_MlCjwrBXMG2w&usqp=CAU", 
+    logo: "https://play-lh.googleusercontent.com/XqqUT5cmgf7CpZvXLVipRgNrbxk-bm4NbfxQiGZMvfVGuiQMC-JJPaJFfEqLmm_YXjo", 
     url: "https://cjdropshipping.com/",
     description: "Product sourcing, fulfillment, and shipping services worldwide"
   }

@@ -15,18 +15,20 @@ interface OrderFormProps {
   productName: string;
   productPrice: number;
   onOrderComplete: () => void;
+  initialRetailer?: string | null;
 }
 
 export const OrderForm = ({ 
   productId, 
   productName, 
   productPrice, 
-  onOrderComplete 
+  onOrderComplete,
+  initialRetailer = null
 }: OrderFormProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [selectedRetailer, setSelectedRetailer] = useState<string | null>(null);
+  const [selectedRetailer, setSelectedRetailer] = useState<string | null>(initialRetailer);
   const [formData, setFormData] = useState({
     customerName: "",
     customerEmail: "",
@@ -118,7 +120,10 @@ export const OrderForm = ({
             <Input value={`$${productPrice.toFixed(2)}`} disabled />
           </div>
           
-          <RetailerSelector onRetailerSelect={handleRetailerSelect} />
+          <RetailerSelector 
+            onRetailerSelect={handleRetailerSelect} 
+            initialValue={initialRetailer}
+          />
           
           <div className="space-y-1">
             <label htmlFor="customerName" className="text-sm font-medium">Customer Name</label>
