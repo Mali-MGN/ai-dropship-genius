@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { retailers as staticRetailers } from "@/data/retailers";
 
 interface Retailer {
   id: string;
@@ -35,21 +36,38 @@ export const RetailerSelector = ({
       try {
         const { data, error } = await supabase
           .from('integrated_retailers')
-          .select('id, name, logo')
+          .select('id, name')
           .eq('active', true);
         
         if (error) {
           throw error;
         }
 
-        setRetailers(data || []);
+        // Map database retailers to include logos from our static data
+        const mappedRetailers = data.map(dbRetailer => {
+          // Find matching retailer in static data to get the logo
+          const staticRetailer = staticRetailers.find(r => 
+            r.id === dbRetailer.id || r.name.toLowerCase() === dbRetailer.name.toLowerCase()
+          );
+          
+          return {
+            id: dbRetailer.id,
+            name: dbRetailer.name,
+            logo: staticRetailer?.logo // Add logo from static data if available
+          };
+        });
+
+        setRetailers(mappedRetailers);
       } catch (error) {
         console.error('Error fetching retailers:', error);
         toast({
           title: "Error",
-          description: "Failed to load retailers",
+          description: "Failed to load retailers. Using static data instead.",
           variant: "destructive",
         });
+        
+        // Fallback to static data
+        setRetailers(staticRetailers);
       } finally {
         setLoading(false);
       }
