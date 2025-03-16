@@ -169,6 +169,7 @@ export class AIService {
    */
   static async getSocialConnections(): Promise<SocialConnection[]> {
     try {
+      // Use the custom type to cast the response
       const { data, error } = await supabase
         .from('social_connections')
         .select('*')
@@ -188,6 +189,7 @@ export class AIService {
    */
   static async getThirdPartyConnections(): Promise<ThirdPartyConnection[]> {
     try {
+      // Use the custom type to cast the response
       const { data, error } = await supabase
         .from('third_party_connections')
         .select('*')

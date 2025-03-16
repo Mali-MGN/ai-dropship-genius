@@ -207,6 +207,60 @@ export type Database = {
         }
         Relationships: []
       }
+      social_connections: {
+        Row: {
+          connected_at: string
+          id: string
+          provider: string
+          provider_id: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          connected_at?: string
+          id?: string
+          provider: string
+          provider_id: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          connected_at?: string
+          id?: string
+          provider?: string
+          provider_id?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      third_party_connections: {
+        Row: {
+          connected_at: string
+          id: string
+          provider: string
+          provider_id: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          connected_at?: string
+          id?: string
+          provider: string
+          provider_id: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          connected_at?: string
+          id?: string
+          provider?: string
+          provider_id?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
       user_orders: {
         Row: {
           actual_delivery: string | null

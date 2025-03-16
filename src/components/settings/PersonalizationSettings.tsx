@@ -1,4 +1,3 @@
-
 import React, { useState, Dispatch, SetStateAction, useEffect } from 'react';
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -6,10 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { CheckCircle, XCircle, Info, Shield, Sparkles, Users } from "lucide-react";
+import { CheckCircle, XCircle, Info, Shield, Sparkles, Users, Link as LinkIcon } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { UserPreferences } from '@/lib/utils';
-import { supabase } from "@/integrations/supabase/client";
+import { AIService } from "@/utils/AIService";
 import { useAuth } from "@/context/AuthContext";
 
 // This would be connected to your data store in a real implementation
@@ -53,15 +52,7 @@ export const PersonalizationSettings = ({
 
   const fetchUserPreferences = async () => {
     try {
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
+      const data = await AIService.getUserPreferences();
 
       // If preferences exist in the database, update the state
       if (data) {
@@ -90,21 +81,9 @@ export const PersonalizationSettings = ({
 
   const fetchConnectedAccounts = async () => {
     try {
-      // Count social connections
-      const { data: socialData, error: socialError } = await supabase
-        .from('social_connections')
-        .select('id', { count: 'exact' })
-        .eq('user_id', user?.id);
-        
-      if (socialError && socialError.code !== 'PGRST116') throw socialError;
-      
-      // Count third-party connections
-      const { data: thirdPartyData, error: thirdPartyError } = await supabase
-        .from('third_party_connections')
-        .select('id', { count: 'exact' })
-        .eq('user_id', user?.id);
-        
-      if (thirdPartyError && thirdPartyError.code !== 'PGRST116') throw thirdPartyError;
+      // Use the AIService to fetch connections
+      const socialData = await AIService.getSocialConnections();
+      const thirdPartyData = await AIService.getThirdPartyConnections();
       
       setConnectedAccounts({
         social: socialData?.length || 0,
@@ -350,7 +329,7 @@ export const PersonalizationSettings = ({
                     {connectedAccounts.social} social accounts
                   </Badge>
                   <Badge variant="outline" className="flex items-center gap-1">
-                    <Link className="h-3.5 w-3.5" />
+                    <LinkIcon className="h-3.5 w-3.5" />
                     {connectedAccounts.thirdParty} third-party apps
                   </Badge>
                 </div>

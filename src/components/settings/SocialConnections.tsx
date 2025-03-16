@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Facebook, Twitter, Instagram, Github } from "lucide-react";
+import { AIService } from "@/utils/AIService";
 
 interface Connection {
   id: string;
@@ -31,21 +30,9 @@ export function SocialConnections() {
   const fetchConnections = async () => {
     setLoading(true);
     try {
-      // Fetch social media connections
-      const { data: socialData, error: socialError } = await supabase
-        .from('social_connections')
-        .select('*')
-        .eq('user_id', user?.id);
-
-      if (socialError) throw socialError;
-      
-      // Fetch third-party connections
-      const { data: thirdPartyData, error: thirdPartyError } = await supabase
-        .from('third_party_connections')
-        .select('*')
-        .eq('user_id', user?.id);
-
-      if (thirdPartyError) throw thirdPartyError;
+      // Use the AIService to fetch connections
+      const socialData = await AIService.getSocialConnections();
+      const thirdPartyData = await AIService.getThirdPartyConnections();
       
       setSocialConnections(socialData || []);
       setThirdPartyConnections(thirdPartyData || []);
@@ -72,19 +59,10 @@ export function SocialConnections() {
       // Then store the connection details in the database
       
       // Simulating a successful connection for demonstration purposes
-      const connectionData = {
-        user_id: user?.id,
-        provider,
+      await AIService.connectSocialAccount(provider, {
         provider_id: `mock_${provider}_id_${Math.random().toString(36).substring(7)}`,
-        username: `${provider.toLowerCase()}_user_${Math.random().toString(36).substring(7)}`,
-        connected_at: new Date().toISOString()
-      };
-      
-      const { error } = await supabase
-        .from('social_connections')
-        .insert(connectionData);
-        
-      if (error) throw error;
+        username: `${provider.toLowerCase()}_user_${Math.random().toString(36).substring(7)}`
+      });
       
       toast({
         title: "Connected",
@@ -114,19 +92,10 @@ export function SocialConnections() {
       // Then store the connection details in the database
       
       // Simulating a successful connection for demonstration purposes
-      const connectionData = {
-        user_id: user?.id,
-        provider,
+      await AIService.connectThirdPartyApp(provider, {
         provider_id: `mock_${provider}_id_${Math.random().toString(36).substring(7)}`,
-        username: `${provider.toLowerCase()}_user_${Math.random().toString(36).substring(7)}`,
-        connected_at: new Date().toISOString()
-      };
-      
-      const { error } = await supabase
-        .from('third_party_connections')
-        .insert(connectionData);
-        
-      if (error) throw error;
+        username: `${provider.toLowerCase()}_user_${Math.random().toString(36).substring(7)}`
+      });
       
       toast({
         title: "Connected",
@@ -152,14 +121,7 @@ export function SocialConnections() {
         description: "Removing connection.",
       });
       
-      const tableName = type === 'social' ? 'social_connections' : 'third_party_connections';
-      
-      const { error } = await supabase
-        .from(tableName)
-        .delete()
-        .eq('id', id);
-        
-      if (error) throw error;
+      await AIService.disconnectAccount(id, type);
       
       toast({
         title: "Disconnected",
