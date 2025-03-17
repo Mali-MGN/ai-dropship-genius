@@ -18,7 +18,11 @@ import { cn } from "@/lib/utils";
 interface AnalyticsChartProps {
   title: string;
   description?: string;
-  data: any[];
+  data: Array<{
+    name: string;
+    value: number;
+    [key: string]: any;
+  }>;
   className?: string;
 }
 

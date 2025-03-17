@@ -42,6 +42,339 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_summary: {
+        Row: {
+          id: string
+          month: number
+          order_count: number
+          total_cost: number
+          total_profit: number
+          total_revenue: number
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          id?: string
+          month: number
+          order_count?: number
+          total_cost?: number
+          total_profit?: number
+          total_revenue?: number
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          id?: string
+          month?: number
+          order_count?: number
+          total_cost?: number
+          total_profit?: number
+          total_revenue?: number
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      integrated_retailers: {
+        Row: {
+          active: boolean
+          api_endpoint: string
+          api_key: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          api_endpoint: string
+          api_key: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          api_endpoint?: string
+          api_key?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          reference_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          reference_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          reference_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scraped_products: {
+        Row: {
+          category: string | null
+          compare_price: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          in_stock: boolean | null
+          is_trending: boolean | null
+          name: string
+          price: number | null
+          product_url: string | null
+          profit_margin: number | null
+          rating: number | null
+          review_count: number | null
+          source: string | null
+          stock_quantity: number | null
+          tags: string[] | null
+          trending_score: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          compare_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          in_stock?: boolean | null
+          is_trending?: boolean | null
+          name: string
+          price?: number | null
+          product_url?: string | null
+          profit_margin?: number | null
+          rating?: number | null
+          review_count?: number | null
+          source?: string | null
+          stock_quantity?: number | null
+          tags?: string[] | null
+          trending_score?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          compare_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          in_stock?: boolean | null
+          is_trending?: boolean | null
+          name?: string
+          price?: number | null
+          product_url?: string | null
+          profit_margin?: number | null
+          rating?: number | null
+          review_count?: number | null
+          source?: string | null
+          stock_quantity?: number | null
+          tags?: string[] | null
+          trending_score?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      social_connections: {
+        Row: {
+          connected_at: string
+          id: string
+          provider: string
+          provider_id: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          connected_at?: string
+          id?: string
+          provider: string
+          provider_id: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          connected_at?: string
+          id?: string
+          provider?: string
+          provider_id?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      third_party_connections: {
+        Row: {
+          connected_at: string
+          id: string
+          provider: string
+          provider_id: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          connected_at?: string
+          id?: string
+          provider: string
+          provider_id: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          connected_at?: string
+          id?: string
+          provider?: string
+          provider_id?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      user_orders: {
+        Row: {
+          actual_delivery: string | null
+          amount: number
+          cost: number
+          customer_address: string
+          customer_email: string
+          customer_name: string
+          estimated_delivery: string | null
+          id: string
+          order_date: string
+          order_id: string
+          product_id: string
+          profit: number
+          retailer_id: string | null
+          status: string
+          tracking_number: string | null
+          tracking_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_delivery?: string | null
+          amount: number
+          cost: number
+          customer_address: string
+          customer_email: string
+          customer_name: string
+          estimated_delivery?: string | null
+          id?: string
+          order_date?: string
+          order_id: string
+          product_id: string
+          profit: number
+          retailer_id?: string | null
+          status?: string
+          tracking_number?: string | null
+          tracking_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_delivery?: string | null
+          amount?: number
+          cost?: number
+          customer_address?: string
+          customer_email?: string
+          customer_name?: string
+          estimated_delivery?: string | null
+          id?: string
+          order_date?: string
+          order_id?: string
+          product_id?: string
+          profit?: number
+          retailer_id?: string | null
+          status?: string
+          tracking_number?: string | null
+          tracking_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "scraped_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_orders_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "integrated_retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_preferences: {
+        Row: {
+          enable_personalization: boolean | null
+          enable_shopping_history: boolean | null
+          enable_social_recommendations: boolean | null
+          id: string
+          interests: string[] | null
+          last_updated: string | null
+          price_range_max: number | null
+          price_range_min: number | null
+          user_id: string
+        }
+        Insert: {
+          enable_personalization?: boolean | null
+          enable_shopping_history?: boolean | null
+          enable_social_recommendations?: boolean | null
+          id?: string
+          interests?: string[] | null
+          last_updated?: string | null
+          price_range_max?: number | null
+          price_range_min?: number | null
+          user_id: string
+        }
+        Update: {
+          enable_personalization?: boolean | null
+          enable_shopping_history?: boolean | null
+          enable_social_recommendations?: boolean | null
+          id?: string
+          interests?: string[] | null
+          last_updated?: string | null
+          price_range_max?: number | null
+          price_range_min?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
