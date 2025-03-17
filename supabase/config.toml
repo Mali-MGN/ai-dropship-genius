@@ -130,6 +130,4 @@ vector_port = 54328
 # Configure one of the supported backends: `postgres`, `bigquery`
 backend = "postgres"
 
-[experimental]
-# Enables experimental features. These features are subject to change and may be buggy.
-features = []
+# The experimental section has been completely removed as it was causing the error
