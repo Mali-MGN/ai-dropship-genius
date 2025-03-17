@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -55,12 +56,12 @@ export function ProductFilters({
   const [freeShipping, setFreeShipping] = useState(false);
   
   const filterTabs = [
-    { title: "All", icon: TagIcon as LucideIcon },
-    { title: "Price", icon: DollarSign as LucideIcon },
-    { title: "Rating", icon: ThumbsUp as LucideIcon },
-    { title: "New", icon: Clock as LucideIcon },
+    { title: "All", icon: TagIcon as LucideIcon, type: "tab" as const },
+    { title: "Price", icon: DollarSign as LucideIcon, type: "tab" as const },
+    { title: "Rating", icon: ThumbsUp as LucideIcon, type: "tab" as const },
+    { title: "New", icon: Clock as LucideIcon, type: "tab" as const },
     { type: "separator" as const },
-    { title: "Advanced", icon: Filter as LucideIcon },
+    { title: "Advanced", icon: Filter as LucideIcon, type: "tab" as const },
   ];
   
   const handleFilterTabChange = (index: number | null) => {

@@ -10,7 +10,7 @@ import { LucideIcon } from "lucide-react";
 interface Tab {
   title: string;
   icon: LucideIcon;
-  type?: never;
+  type?: "tab"; // Make type optional with a default value of "tab"
 }
 
 interface Separator {
@@ -85,7 +85,7 @@ export function ExpandableTabs({
           return <Separator key={`separator-${index}`} />;
         }
 
-        // We can safely cast tab as Tab since we've already checked if it's a separator
+        // Now TypeScript knows this is definitely a Tab
         const tabItem = tab as Tab;
         const Icon = tabItem.icon;
         
