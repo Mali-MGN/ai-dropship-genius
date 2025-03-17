@@ -22,7 +22,8 @@ import {
   Tag,
   SlidersHorizontal,
   Download,
-  CalendarClock
+  CalendarClock,
+  BarChart
 } from "lucide-react";
 
 import { AIProductPromptGenerator } from "@/components/ai-discovery/AIProductPromptGenerator";
