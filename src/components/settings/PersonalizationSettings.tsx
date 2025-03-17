@@ -12,7 +12,6 @@ import { AIService } from "@/utils/AIService";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-// This would be connected to your data store in a real implementation
 const DEFAULT_PREFERENCES: UserPreferences = {
   interests: ['electronics', 'fashion', 'home'],
   priceRange: {
@@ -43,7 +42,6 @@ export const PersonalizationSettings = ({
     thirdParty: 0
   });
 
-  // Fetch user preferences from the database on component mount
   useEffect(() => {
     if (user) {
       fetchUserPreferences();
@@ -53,9 +51,8 @@ export const PersonalizationSettings = ({
 
   const fetchUserPreferences = async () => {
     try {
-      const data = await AIService.getUserPreferences();
+      const data = await AIService.getUserPreferences(user?.id);
 
-      // If preferences exist in the database, update the state
       if (data) {
         onPreferencesChange({
           interests: data.interests || [],
@@ -67,7 +64,6 @@ export const PersonalizationSettings = ({
         });
         setEnableSocialRecommendations(data.enable_social_recommendations || false);
       } else if (user) {
-        // If no preferences exist yet, create a default one
         await createDefaultPreferences();
       }
     } catch (error) {
@@ -82,9 +78,8 @@ export const PersonalizationSettings = ({
 
   const fetchConnectedAccounts = async () => {
     try {
-      // Use the AIService to fetch connections
-      const socialData = await AIService.getSocialConnections();
-      const thirdPartyData = await AIService.getThirdPartyConnections();
+      const socialData = await AIService.getSocialConnections(user?.id);
+      const thirdPartyData = await AIService.getThirdPartyConnections(user?.id);
       
       setConnectedAccounts({
         social: socialData?.length || 0,
@@ -110,7 +105,6 @@ export const PersonalizationSettings = ({
 
       if (error) throw error;
 
-      // Set the default preferences in state
       onPreferencesChange(DEFAULT_PREFERENCES);
     } catch (error) {
       console.error('Error creating default preferences:', error);
@@ -132,7 +126,7 @@ export const PersonalizationSettings = ({
         price_range_min: preferences.priceRange.min,
         price_range_max: preferences.priceRange.max,
         enable_social_recommendations: enableSocialRecommendations
-      });
+      }, user.id);
     } catch (error) {
       console.error('Error updating personalization setting:', error);
       toast({
@@ -155,7 +149,7 @@ export const PersonalizationSettings = ({
         price_range_min: preferences.priceRange.min,
         price_range_max: preferences.priceRange.max,
         enable_social_recommendations: enabled
-      });
+      }, user.id);
       
       toast({
         title: "Setting Updated",
@@ -199,7 +193,7 @@ export const PersonalizationSettings = ({
           price_range_min: preferences.priceRange.min,
           price_range_max: preferences.priceRange.max,
           enable_social_recommendations: enableSocialRecommendations
-        });
+        }, user.id);
         
         setNewInterest("");
       } catch (error) {
@@ -236,7 +230,7 @@ export const PersonalizationSettings = ({
         price_range_min: preferences.priceRange.min,
         price_range_max: preferences.priceRange.max,
         enable_social_recommendations: enableSocialRecommendations
-      });
+      }, user.id);
     } catch (error) {
       console.error('Error removing interest:', error);
       toast({
@@ -259,7 +253,7 @@ export const PersonalizationSettings = ({
         price_range_min: preferences.priceRange.min,
         price_range_max: preferences.priceRange.max,
         enable_social_recommendations: enableSocialRecommendations
-      });
+      }, user.id);
       
       toast({
         title: "Preferences saved",

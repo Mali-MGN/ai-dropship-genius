@@ -114,7 +114,27 @@ const OrderDetails = () => {
       
       if (error) throw error;
       
-      setOrder(data);
+      const formattedOrder: OrderDetails = {
+        ...data,
+        product: {
+          id: Array.isArray(data.product) 
+            ? (data.product[0]?.id || '') 
+            : (data.product?.id || ''),
+          name: Array.isArray(data.product) 
+            ? (data.product[0]?.name || '') 
+            : (data.product?.name || ''),
+          image_url: Array.isArray(data.product) 
+            ? (data.product[0]?.image_url || null) 
+            : (data.product?.image_url || null)
+        },
+        retailer: {
+          name: Array.isArray(data.retailer) 
+            ? (data.retailer[0]?.name || '') 
+            : (data.retailer?.name || '')
+        }
+      };
+      
+      setOrder(formattedOrder);
     } catch (error) {
       console.error('Error fetching order details:', error);
       toast({
@@ -131,7 +151,6 @@ const OrderDetails = () => {
   useEffect(() => {
     fetchOrderDetails();
     
-    // Set up a realtime subscription for the specific order
     const channel = supabase
       .channel(`order-details-${orderId}`)
       .on('postgres_changes', { 
@@ -143,16 +162,13 @@ const OrderDetails = () => {
         console.log('Order updated!', payload);
         
         if (payload.old && payload.new && payload.old.status !== payload.new.status) {
-          // Show status change notification
           toast({
             title: "Order Status Updated",
             description: `Status changed from ${payload.old.status} to ${payload.new.status}`,
           });
           
-          // Update the order with the new data
-          setOrder(current => current ? { ...current, ...payload.new } : null);
+          setOrder(current => current ? { ...current, status: payload.new.status } : null);
         } else {
-          // For other updates, just refresh the data
           fetchOrderDetails();
         }
       })
@@ -168,7 +184,6 @@ const OrderDetails = () => {
     
     setUpdating(true);
     try {
-      // Optimistic update
       setOrder(current => current ? { ...current, status: newStatus } : null);
       
       const { error } = await supabase.functions.invoke('update-order-status', {
@@ -189,7 +204,6 @@ const OrderDetails = () => {
         variant: "destructive",
       });
       
-      // Revert changes on error
       fetchOrderDetails();
     } finally {
       setUpdating(false);

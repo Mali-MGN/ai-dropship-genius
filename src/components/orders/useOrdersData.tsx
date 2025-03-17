@@ -68,8 +68,22 @@ export function useOrdersData({
       const formattedOrders = (data || []).map(item => ({
         ...item,
         // Ensure product and retailer are objects not arrays
-        product: { name: item.product ? item.product.name || 'Unknown' : 'Unknown' },
-        retailer: { name: item.retailer ? item.retailer.name || 'Unknown' : 'Unknown' }
+        product: { 
+          name: item.product && typeof item.product === 'object' ? 
+            // Handle both array and object cases
+            Array.isArray(item.product) 
+              ? (item.product[0]?.name || 'Unknown') 
+              : (item.product.name || 'Unknown')
+            : 'Unknown'
+        },
+        retailer: { 
+          name: item.retailer && typeof item.retailer === 'object' ? 
+            // Handle both array and object cases
+            Array.isArray(item.retailer) 
+              ? (item.retailer[0]?.name || 'Unknown') 
+              : (item.retailer.name || 'Unknown')
+            : 'Unknown'
+        }
       })) as Order[];
       
       setOrders(formattedOrders);
