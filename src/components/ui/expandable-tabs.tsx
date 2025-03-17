@@ -10,13 +10,12 @@ import { LucideIcon } from "lucide-react";
 interface Tab {
   title: string;
   icon: LucideIcon;
-  type?: "tab"; // Make type optional with a default value of "tab"
+  type: "tab";  // Make type required with a specific value
 }
 
 interface Separator {
   type: "separator";
-  title?: never;
-  icon?: never;
+  // No title or icon for separators
 }
 
 type TabItem = Tab | Separator;
@@ -86,12 +85,11 @@ export function ExpandableTabs({
         }
 
         // Now TypeScript knows this is definitely a Tab
-        const tabItem = tab as Tab;
-        const Icon = tabItem.icon;
+        const Icon = tab.icon;
         
         return (
           <motion.button
-            key={tabItem.title}
+            key={tab.title}
             variants={buttonVariants}
             initial={false}
             animate="animate"
@@ -116,7 +114,7 @@ export function ExpandableTabs({
                   transition={transition}
                   className="overflow-hidden"
                 >
-                  {tabItem.title}
+                  {tab.title}
                 </motion.span>
               )}
             </AnimatePresence>

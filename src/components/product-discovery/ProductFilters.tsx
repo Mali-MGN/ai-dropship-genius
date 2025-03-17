@@ -60,7 +60,7 @@ export function ProductFilters({
     { title: "Price", icon: DollarSign as LucideIcon, type: "tab" as const },
     { title: "Rating", icon: ThumbsUp as LucideIcon, type: "tab" as const },
     { title: "New", icon: Clock as LucideIcon, type: "tab" as const },
-    { type: "separator" as const }, // Remove title and icon properties completely
+    { type: "separator" as const }, // Correct format for separator - no title or icon
     { title: "Advanced", icon: Filter as LucideIcon, type: "tab" as const },
   ];
   
