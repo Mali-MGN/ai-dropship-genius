@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,7 +57,6 @@ export default function IntegratedProductDiscovery() {
   const [generatedProducts, setGeneratedProducts] = useState<Product[]>([]);
   const { toast } = useToast();
 
-  // Product Discovery hook
   const {
     filteredProducts,
     aiRecommendedProducts,
@@ -85,7 +83,6 @@ export default function IntegratedProductDiscovery() {
     handleExport
   } = useProductDiscovery();
 
-  // Function to fetch personalized recommendations
   const fetchPersonalizedRecommendations = async () => {
     setLoading(true);
     try {
@@ -115,13 +112,11 @@ export default function IntegratedProductDiscovery() {
     }
   };
 
-  // Import a product to your store
   const handleAIImportProduct = async (productId: string) => {
     try {
       const product = generatedProducts.find(p => p.id === productId);
       if (!product) return false;
       
-      // Simulate adding to user's store
       await new Promise(resolve => setTimeout(resolve, 800));
       
       toast({
@@ -141,13 +136,11 @@ export default function IntegratedProductDiscovery() {
     }
   };
 
-  // Handle search query submission
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     fetchPersonalizedRecommendations();
   };
 
-  // Initial load of recommendations
   useEffect(() => {
     fetchPersonalizedRecommendations();
   }, []);
@@ -187,7 +180,6 @@ export default function IntegratedProductDiscovery() {
             </TabsTrigger>
           </TabsList>
           
-          {/* AI Personalized Tab Content */}
           <TabsContent value="personalized" className="space-y-4">
             <form onSubmit={handleSearch} className="flex gap-2 mb-4">
               <div className="relative flex-1">
@@ -248,7 +240,6 @@ export default function IntegratedProductDiscovery() {
             <AIProductPromptGenerator />
           </TabsContent>
           
-          {/* Market Insights Tab Content */}
           <TabsContent value="market" className="space-y-4">
             <Card>
               <CardHeader>
@@ -346,7 +337,6 @@ export default function IntegratedProductDiscovery() {
             </Card>
           </TabsContent>
           
-          {/* Product Discovery Tab Content */}
           <TabsContent value="discovery" className="space-y-4">
             {!hasSelectedRetailer && (
               <Card className="bg-amber-50 border-amber-200 mb-4">
@@ -429,7 +419,7 @@ export default function IntegratedProductDiscovery() {
                       High Profit Margin
                     </TabsTrigger>
                     <TabsTrigger value="competitors">
-                      <BarChart4 className="mr-2 h-4 w-4" />
+                      <BarChart className="mr-2 h-4 w-4" />
                       Competitor Insights
                     </TabsTrigger>
                   </TabsList>
