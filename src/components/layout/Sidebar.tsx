@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   LayoutDashboard,
@@ -30,19 +31,9 @@ export const Sidebar = ({ id, className, open, onClose }: SidebarProps) => {
       label: "Dashboard",
     },
     {
-      href: "/product-discovery",
-      icon: ShoppingCart,
-      label: "Product Discovery",
-    },
-    {
       href: "/orders",
       icon: Package,
       label: "Orders",
-    },
-    {
-      href: "/ai-product-discovery",
-      icon: Sparkles,
-      label: "AI Hub",
     },
     {
       href: "/analytics",
@@ -53,6 +44,16 @@ export const Sidebar = ({ id, className, open, onClose }: SidebarProps) => {
       href: "/customers",
       icon: Users,
       label: "Customers",
+    },
+    {
+      href: "/ai-product-discovery",
+      icon: Sparkles,
+      label: "AI Hub",
+    },
+    {
+      href: "/product-discovery",
+      icon: ShoppingCart,
+      label: "Product Discovery",
     },
     {
       href: "/settings",

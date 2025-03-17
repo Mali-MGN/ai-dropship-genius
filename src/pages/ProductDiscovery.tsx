@@ -1,13 +1,15 @@
 
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, DollarSign, BarChart4 } from "lucide-react";
+import { TrendingUp, DollarSign, BarChart4, AlertCircle } from "lucide-react";
 import { RetailerGrid } from "@/components/product-discovery/RetailerGrid";
 import { IntegrationStatus } from "@/components/product-discovery/IntegrationStatus";
 import { ProductFilters } from "@/components/product-discovery/ProductFilters";
 import { ProductGrid } from "@/components/product-discovery/ProductGrid";
 import { useProductDiscovery } from "@/hooks/useProductDiscovery";
 import { retailers } from "@/data/retailers";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 export default function ProductDiscovery() {
   const {
@@ -29,6 +31,8 @@ export default function ProductDiscovery() {
     handleExport
   } = useProductDiscovery();
 
+  const hasSelectedRetailer = !!selectedRetailer;
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -37,13 +41,25 @@ export default function ProductDiscovery() {
           <p className="text-muted-foreground text-lg">Find trending products to add to your store</p>
         </div>
         
+        {!hasSelectedRetailer && (
+          <Alert variant="default" className="bg-amber-50 border-amber-200 mb-4">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-800">Select a retailer</AlertTitle>
+            <AlertDescription className="text-amber-700">
+              Please select a retailer below to start discovering products.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <RetailerGrid 
           retailers={retailers}
           selectedRetailer={selectedRetailer}
           onSelectRetailer={setSelectedRetailer}
         />
         
-        <IntegrationStatus />
+        {hasSelectedRetailer && (
+          <IntegrationStatus />
+        )}
         
         <ProductFilters 
           searchQuery={searchQuery}
