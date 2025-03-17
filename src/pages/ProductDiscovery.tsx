@@ -3,6 +3,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, DollarSign, BarChart4 } from "lucide-react";
 import { RetailerGrid } from "@/components/product-discovery/RetailerGrid";
+import { IntegrationStatus } from "@/components/product-discovery/IntegrationStatus";
 import { ProductFilters } from "@/components/product-discovery/ProductFilters";
 import { ProductGrid } from "@/components/product-discovery/ProductGrid";
 import { useProductDiscovery } from "@/hooks/useProductDiscovery";
@@ -41,6 +42,8 @@ export default function ProductDiscovery() {
           selectedRetailer={selectedRetailer}
           onSelectRetailer={setSelectedRetailer}
         />
+        
+        <IntegrationStatus />
         
         <ProductFilters 
           searchQuery={searchQuery}

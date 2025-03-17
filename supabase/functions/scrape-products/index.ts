@@ -12,6 +12,7 @@ interface ScrapingRequest {
   category?: string;
   url?: string;
   limit?: number;
+  sync?: boolean;
 }
 
 interface ScrapedProduct {
@@ -56,7 +57,7 @@ serve(async (req) => {
     );
 
     // Parse the request body
-    const { source, category, url, limit = 10 }: ScrapingRequest = await req.json();
+    const { source, category, url, limit = 10, sync = false }: ScrapingRequest = await req.json();
 
     if (!source) {
       return new Response(JSON.stringify({ error: 'Source is required' }), {
@@ -65,7 +66,32 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Scraping products from ${source}, category: ${category || 'any'}, limit: ${limit}`);
+    console.log(`Scraping products from ${source}, category: ${category || 'any'}, limit: ${limit}, sync: ${sync}`);
+    
+    // First, check if the retailer is active
+    const { data: retailerData, error: retailerError } = await supabaseClient
+      .from('integrated_retailers')
+      .select('*')
+      .eq('name', source)
+      .eq('active', true)
+      .maybeSingle();
+    
+    if (retailerError) {
+      return new Response(JSON.stringify({ error: retailerError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // If sync is true, we need to make sure the retailer is connected
+    if (sync && !retailerData) {
+      return new Response(JSON.stringify({ 
+        error: 'Retailer not connected or inactive. Please connect the retailer first.' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
     
     // Simulate scraping by generating mock products based on the source
     const products: ScrapedProduct[] = mockScrapeProducts(source, category, limit);
@@ -88,11 +114,24 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+    
+    // If this is a sync operation, update the retailer's last sync time
+    if (sync && retailerData) {
+      const { error: updateError } = await supabaseClient
+        .from('integrated_retailers')
+        .update({ last_synced: new Date().toISOString() })
+        .eq('id', retailerData.id);
+      
+      if (updateError) {
+        console.error('Error updating retailer sync time:', updateError);
+      }
+    }
 
     return new Response(JSON.stringify({ 
       success: true, 
       message: `Successfully scraped ${products.length} products from ${source}`,
-      products
+      products,
+      sync_completed: sync
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
