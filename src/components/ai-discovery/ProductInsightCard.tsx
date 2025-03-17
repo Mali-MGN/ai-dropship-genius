@@ -1,9 +1,8 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, TrendingDown, Zap } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface ProductInsightCardProps {
   title: string;
@@ -21,51 +20,48 @@ export function ProductInsightCard({
   tags
 }: ProductInsightCardProps) {
   return (
-    <Card className="h-full">
-      <CardContent className="pt-6">
-        <div className="flex items-start justify-between mb-2">
-          <h3 className="font-medium">{title}</h3>
-          <Badge 
-            className={cn(
-              "ml-2",
-              trend === "upward" 
-                ? "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25 border-emerald-200" 
-                : trend === "downward" 
-                  ? "bg-rose-500/15 text-rose-600 hover:bg-rose-500/25 border-rose-200" 
-                  : "bg-amber-500/15 text-amber-600 hover:bg-amber-500/25 border-amber-200"
-            )}
-          >
-            {trend === "upward" ? (
-              <TrendingUp className="h-3 w-3 mr-1" />
-            ) : trend === "downward" ? (
-              <TrendingDown className="h-3 w-3 mr-1" />
-            ) : (
-              <Zap className="h-3 w-3 mr-1" />
-            )}
-            {trend === "upward" ? "Trending Up" : trend === "downward" ? "Declining" : "Stable"}
-          </Badge>
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-5">
+        <div className="flex justify-between items-start mb-3">
+          <h3 className="text-lg font-medium">{title}</h3>
+          {trend === "upward" ? (
+            <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-0">
+              <TrendingUp className="h-3.5 w-3.5 mr-1 text-emerald-600" />
+              Rising Trend
+            </Badge>
+          ) : trend === "downward" ? (
+            <Badge className="bg-rose-100 text-rose-800 hover:bg-rose-200 border-0">
+              <TrendingDown className="h-3.5 w-3.5 mr-1 text-rose-600" />
+              Falling Trend
+            </Badge>
+          ) : (
+            <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-0">
+              Stable Market
+            </Badge>
+          )}
         </div>
         
-        <p className="text-sm text-muted-foreground mb-4">{description}</p>
+        <p className="text-muted-foreground text-sm mb-4">{description}</p>
         
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-muted-foreground">AI Confidence</span>
-            <span className="text-xs font-medium">{confidence}%</span>
+        <div className="mb-3">
+          <div className="flex justify-between text-sm mb-1">
+            <span className="font-medium">AI Confidence</span>
+            <span className="text-muted-foreground">{confidence}%</span>
           </div>
           <Progress 
             value={confidence} 
-            className={cn(
-              confidence >= 80 ? "bg-emerald-100 text-emerald-600" : 
-              confidence >= 50 ? "bg-amber-100 text-amber-600" : 
-              "bg-rose-100 text-rose-600"
-            )}
+            className="h-2"
+            indicatorClassName={
+              confidence > 80 ? "bg-emerald-500" : 
+              confidence > 60 ? "bg-amber-500" : 
+              "bg-rose-500"
+            }
           />
         </div>
         
-        <div className="flex flex-wrap gap-1.5">
-          {tags.map((tag, i) => (
-            <Badge key={i} variant="secondary" className="text-xs">
+        <div className="flex flex-wrap gap-2 mt-4">
+          {tags.map((tag, index) => (
+            <Badge key={index} variant="secondary" className="text-xs bg-secondary/50">
               {tag}
             </Badge>
           ))}
