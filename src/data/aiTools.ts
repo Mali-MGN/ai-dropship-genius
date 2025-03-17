@@ -54,3 +54,25 @@ export const aiTools: AITool[] = [
     category: "writing"
   }
 ];
+
+// Helper functions for AIToolExplorer
+export function getAllCategories(): string[] {
+  const categories = [...new Set(aiTools.map(tool => tool.category))];
+  return categories;
+}
+
+export function getToolsByCategory(category: string): AITool[] {
+  return aiTools.filter(tool => tool.category === category);
+}
+
+export function getCategoryLabel(category: string): string {
+  const categoryLabels: Record<string, string> = {
+    "chat": "Chat AI",
+    "image": "Image Generation",
+    "writing": "Content Writing",
+    "audio": "Audio Processing",
+    "video": "Video Creation"
+  };
+  
+  return categoryLabels[category] || category.charAt(0).toUpperCase() + category.slice(1);
+}

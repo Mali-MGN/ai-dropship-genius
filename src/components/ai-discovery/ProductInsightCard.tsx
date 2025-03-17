@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 interface ProductInsightCardProps {
   title: string;
@@ -50,12 +51,12 @@ export function ProductInsightCard({
           </div>
           <Progress 
             value={confidence} 
-            className="h-2"
-            indicatorClassName={
+            className={cn(
+              "h-2",
               confidence > 80 ? "bg-emerald-500" : 
               confidence > 60 ? "bg-amber-500" : 
               "bg-rose-500"
-            }
+            )}
           />
         </div>
         
