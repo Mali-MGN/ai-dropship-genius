@@ -1,129 +1,234 @@
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, CheckCircle, AlertTriangle, XCircle, Settings } from "lucide-react";
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Check, X, RefreshCcw, AlertTriangle, Loader2 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+
+interface RetailerIntegration {
+  id: string;
+  name: string;
+  active: boolean;
+  last_synced?: string;
+  product_count?: number;
+}
 
 export function IntegrationStatus() {
-  const [refreshing, setRefreshing] = useState(false);
-  const [status, setStatus] = useState({
-    api: "connected",
-    products: 12542,
-    lastSync: "2 hours ago",
-    syncProgress: 100,
-  });
+  const [integrations, setIntegrations] = useState<RetailerIntegration[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    setStatus(prev => ({ ...prev, syncProgress: 0 }));
+  useEffect(() => {
+    if (user) {
+      loadIntegrations();
+      setupRealtimeSubscription();
+    }
+  }, [user]);
 
-    // Simulate sync process
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      setStatus(prev => ({ ...prev, syncProgress: progress }));
-      
-      if (progress >= 100) {
-        clearInterval(interval);
-        setRefreshing(false);
-        setStatus(prev => ({ ...prev, lastSync: "Just now" }));
+  const loadIntegrations = async () => {
+    setLoading(true);
+    
+    try {
+      // Get all active retailer integrations
+      const { data: retailerData, error: retailerError } = await supabase
+        .from("integrated_retailers")
+        .select("*")
+        .eq("active", true);
         
-        toast({
-          title: "Synchronization complete",
-          description: "Your product catalog has been updated.",
-        });
+      if (retailerError) throw retailerError;
+      
+      if (retailerData) {
+        // For each integration, get the product count
+        const integrationsWithCounts = await Promise.all(
+          retailerData.map(async (retailer) => {
+            const { count } = await supabase
+              .from("scraped_products")
+              .select("*", { count: "exact", head: true })
+              .eq("source", retailer.name);
+              
+            return {
+              ...retailer,
+              product_count: count || 0
+            };
+          })
+        );
+        
+        setIntegrations(integrationsWithCounts);
       }
-    }, 500);
-  };
-
-  const renderStatusIcon = (apiStatus: string) => {
-    switch (apiStatus) {
-      case "connected":
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case "warning":
-        return <AlertTriangle className="h-5 w-5 text-amber-500" />;
-      case "error":
-        return <XCircle className="h-5 w-5 text-red-500" />;
-      default:
-        return null;
+    } catch (error) {
+      console.error("Error loading retailer integrations:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load retailer integrations",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
+  
+  const setupRealtimeSubscription = () => {
+    const channel = supabase
+      .channel('retailer-integration-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen for all events
+          schema: 'public',
+          table: 'integrated_retailers'
+        },
+        (payload) => {
+          // Update our integrations list when changes occur
+          loadIntegrations();
+        }
+      )
+      .subscribe();
+    
+    // Clean up subscription
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const syncRetailer = async (retailerId: string, retailerName: string) => {
+    setSyncing(retailerId);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('scrape-products', {
+        body: { 
+          source: retailerName, 
+          limit: 20,
+          sync: true
+        }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Sync completed",
+        description: `Successfully synced products from ${retailerName}.`,
+      });
+      
+      // Refresh integrations to show updated counts and sync time
+      loadIntegrations();
+    } catch (error) {
+      console.error(`Error syncing ${retailerName}:`, error);
+      toast({
+        title: "Sync failed",
+        description: `Failed to sync products from ${retailerName}. Please try again.`,
+        variant: "destructive"
+      });
+    } finally {
+      setSyncing(null);
+    }
+  };
+
+  const formatTime = (dateString?: string) => {
+    if (!dateString) return "Never";
+    
+    const date = new Date(dateString);
+    return date.toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Check if sync is needed (over 1 hour old)
+  const syncNeeded = (lastSynced?: string) => {
+    if (!lastSynced) return true;
+    
+    const syncTime = new Date(lastSynced).getTime();
+    const oneHourAgo = Date.now() - 3600000;
+    return syncTime < oneHourAgo;
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Connected Retailers</CardTitle>
+          <CardDescription>Real-time integration status</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center p-4">
+            <RefreshCcw className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="mb-6">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Integration Status</CardTitle>
-            <CardDescription>
-              Current status of your retailer connection
-            </CardDescription>
-          </div>
-          <Badge 
-            variant={
-              status.api === "connected" ? "outline" : 
-              status.api === "warning" ? "secondary" : "destructive"
-            }
-            className={
-              status.api === "connected" ? "bg-green-50 text-green-700 border-green-200" : 
-              status.api === "warning" ? "bg-amber-50 text-amber-700 border-amber-200" : 
-              "bg-red-50 text-red-700 border-red-200"
-            }
-          >
-            {renderStatusIcon(status.api)}
-            <span className="ml-1 capitalize">{status.api}</span>
-          </Badge>
-        </div>
+        <CardTitle>Connected Retailers</CardTitle>
+        <CardDescription>
+          Real-time integration status with your store
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-muted-foreground mb-1">Available Products</span>
-            <span className="text-2xl font-bold">{status.products.toLocaleString()}</span>
+        {integrations.length === 0 ? (
+          <div className="text-center py-4 text-muted-foreground">
+            <p>No retailers connected</p>
+            <p className="text-sm mt-2">Connect a retailer above to start importing products</p>
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-muted-foreground mb-1">Last Synchronized</span>
-            <span className="text-2xl font-bold">{status.lastSync}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-muted-foreground mb-1">API Status</span>
-            <div className="flex items-center gap-2">
-              {renderStatusIcon(status.api)}
-              <span className="text-2xl font-bold capitalize">{status.api}</span>
-            </div>
-          </div>
-        </div>
-        
-        {refreshing && (
-          <div className="mb-4">
-            <div className="flex justify-between text-sm mb-1">
-              <span>Synchronizing products...</span>
-              <span>{status.syncProgress}%</span>
-            </div>
-            <Progress value={status.syncProgress} className="h-2" />
+        ) : (
+          <div className="space-y-4">
+            {integrations.map((integration) => (
+              <div key={integration.id} className="border rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`h-2.5 w-2.5 rounded-full bg-green-500`}></div>
+                    <span className="font-medium">{integration.name}</span>
+                    <Badge variant="outline" className="ml-2">
+                      {integration.product_count} products
+                    </Badge>
+                  </div>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={() => syncRetailer(integration.id, integration.name)}
+                    disabled={syncing === integration.id}
+                  >
+                    {syncing === integration.id ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Syncing...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCcw className="h-3.5 w-3.5" />
+                        Sync Now
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                <div className="mt-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Last synced: {formatTime(integration.last_synced)}</span>
+                    
+                    {syncNeeded(integration.last_synced) && (
+                      <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200 dark:border-amber-900 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        Sync needed
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
-        
-        <div className="flex gap-3">
-          <Button 
-            variant="outline" 
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            {refreshing ? "Synchronizing..." : "Sync Products"}
-          </Button>
-          
-          <Button variant="outline" className="gap-2">
-            <Settings className="h-4 w-4" />
-            API Settings
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );

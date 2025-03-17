@@ -30,9 +30,9 @@ export function SocialConnections() {
   const fetchConnections = async () => {
     setLoading(true);
     try {
-      // Use the AIService to fetch connections with user.id
-      const socialData = await AIService.getSocialConnections(user?.id);
-      const thirdPartyData = await AIService.getThirdPartyConnections(user?.id);
+      // Use the AIService to fetch connections
+      const socialData = await AIService.getSocialConnections();
+      const thirdPartyData = await AIService.getThirdPartyConnections();
       
       setSocialConnections(socialData || []);
       setThirdPartyConnections(thirdPartyData || []);
@@ -55,19 +55,14 @@ export function SocialConnections() {
         description: `Initiating ${provider} authentication.`,
       });
       
-      // Create a mock account details object
-      const accountDetails = {
+      // In a real implementation, this would authenticate with the provider
+      // Then store the connection details in the database
+      
+      // Simulating a successful connection for demonstration purposes
+      await AIService.connectSocialAccount(provider, {
         provider_id: `mock_${provider}_id_${Math.random().toString(36).substring(7)}`,
         username: `${provider.toLowerCase()}_user_${Math.random().toString(36).substring(7)}`
-      };
-      
-      // Call AIService.connectSocialAccount with the right parameters
-      await AIService.connectSocialAccount(
-        provider, 
-        accountDetails, 
-        user?.id, 
-        null // token parameter is optional and can be null
-      );
+      });
       
       toast({
         title: "Connected",
@@ -93,19 +88,14 @@ export function SocialConnections() {
         description: `Initiating ${provider} integration.`,
       });
       
-      // Create a mock account details object
-      const accountDetails = {
+      // In a real implementation, this would authenticate with the third-party service
+      // Then store the connection details in the database
+      
+      // Simulating a successful connection for demonstration purposes
+      await AIService.connectThirdPartyApp(provider, {
         provider_id: `mock_${provider}_id_${Math.random().toString(36).substring(7)}`,
         username: `${provider.toLowerCase()}_user_${Math.random().toString(36).substring(7)}`
-      };
-      
-      // Call AIService.connectThirdPartyApp with the right parameters
-      await AIService.connectThirdPartyApp(
-        provider, 
-        accountDetails, 
-        user?.id, 
-        null // token parameter is optional and can be null
-      );
+      });
       
       toast({
         title: "Connected",
@@ -131,7 +121,7 @@ export function SocialConnections() {
         description: "Removing connection.",
       });
       
-      await AIService.disconnectAccount(id, type, user?.id);
+      await AIService.disconnectAccount(id, type);
       
       toast({
         title: "Disconnected",

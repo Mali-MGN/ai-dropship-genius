@@ -1,283 +1,275 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export interface UserPreferences {
-  enable_personalization: boolean;
-  interests: string[];
-  price_range_min: number;
-  price_range_max: number;
-  enable_social_recommendations: boolean;
+interface ScrapeProductsOptions {
+  source: string;
+  category?: string;
+  limit?: number;
 }
 
-export interface SocialConnection {
+interface PersonalizedRecommendationsResponse {
+  recommendations: Product[];
+  personalized: boolean;
+  message: string;
+  applied_filters?: {
+    interests: string[];
+    price_range: [number | null, number | null];
+    social_enabled?: boolean;
+    connected_accounts?: {
+      social: number;
+      third_party: number;
+    };
+  };
+}
+
+interface Product {
   id: string;
+  name: string;
+  description?: string;
+  price: number;
+  compare_price?: number;
+  source: string;
+  image_url?: string;
+  product_url?: string;
+  category?: string;
+  tags?: string[];
+  rating?: number;
+  review_count?: number;
+  trending_score?: number;
+  is_trending?: boolean;
+  profit_margin?: number;
+  similarityScore?: number;
+  socialRelevanceScore?: number;
+  totalRelevanceScore?: number;
+}
+
+interface SocialConnection {
+  id: string;
+  user_id: string;
   provider: string;
   provider_id: string;
   username: string;
   connected_at: string;
 }
 
-export const AIService = {
-  async getPersonalizedRecommendations(userId?: string) {
-    try {
-      if (!userId && !supabase.auth.getUser) {
-        // Return demo data if no user is available
-        return {
-          recommendations: generateMockRecommendations()
-        };
-      }
+interface ThirdPartyConnection {
+  id: string;
+  user_id: string;
+  provider: string;
+  provider_id: string;
+  username: string;
+  connected_at: string;
+}
 
-      // In a real implementation, this would call a serverless function
-      // to fetch personalized product recommendations
+export class AIService {
+  /**
+   * Scrape products from a specific source
+   */
+  static async scrapeProducts(options: ScrapeProductsOptions): Promise<Product[]> {
+    try {
+      const { data, error } = await supabase.functions.invoke('scrape-products', {
+        body: options
+      });
       
-      // For now, return demo data
-      return {
-        recommendations: generateMockRecommendations()
-      };
+      if (error) throw error;
+      
+      return data.products || [];
     } catch (error) {
-      console.error("Error fetching personalized recommendations:", error);
+      console.error('Error scraping products:', error);
       throw error;
     }
-  },
-
-  async getUserPreferences(userId?: string) {
+  }
+  
+  /**
+   * Get personalized product recommendations for the current user
+   */
+  static async getPersonalizedRecommendations(): Promise<PersonalizedRecommendationsResponse> {
     try {
-      // If no userId is provided, try to get the current user
-      const currentUser = userId || (await supabase.auth.getUser()).data.user?.id;
+      const { data, error } = await supabase.functions.invoke('personalized-recommendations');
       
-      if (!currentUser) return null;
-
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .select('*')
-        .eq('user_id', currentUser)
-        .single();
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No data found, return null
-          return null;
-        }
-        throw error;
-      }
-
+      if (error) throw error;
+      
       return data;
     } catch (error) {
-      console.error("Error fetching user preferences:", error);
-      // Return mock data for demonstration
-      return {
-        interests: ['electronics', 'fashion', 'home'],
-        price_range_min: 10,
-        price_range_max: 200,
-        enable_personalization: true,
-        enable_social_recommendations: false
-      };
-    }
-  },
-
-  async saveUserPreferences(preferences: UserPreferences, userId?: string) {
-    try {
-      // If no userId is provided, try to get the current user
-      const currentUser = userId || (await supabase.auth.getUser()).data.user?.id;
-      
-      if (!currentUser) throw new Error("No authenticated user found");
-
-      const { error } = await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: currentUser,
-          interests: preferences.interests,
-          price_range_min: preferences.price_range_min,
-          price_range_max: preferences.price_range_max,
-          enable_personalization: preferences.enable_personalization,
-          enable_social_recommendations: preferences.enable_social_recommendations,
-          last_updated: new Date().toISOString()
-        });
-
-      if (error) throw error;
-
-      return true;
-    } catch (error) {
-      console.error("Error saving user preferences:", error);
-      // Simulate successful save for demonstration
-      return true;
-    }
-  },
-
-  async getSocialConnections(userId?: string) {
-    try {
-      // If no userId is provided, try to get the current user
-      const currentUser = userId || (await supabase.auth.getUser()).data.user?.id;
-      
-      if (!currentUser) return [];
-
-      const { data, error } = await supabase
-        .from('social_connections')
-        .select('*')
-        .eq('user_id', currentUser);
-
-      if (error) throw error;
-
-      return data || [];
-    } catch (error) {
-      console.error("Error fetching social connections:", error);
-      // Return mock data for demonstration
-      return getMockSocialConnections();
-    }
-  },
-
-  async getThirdPartyConnections(userId?: string) {
-    try {
-      // If no userId is provided, try to get the current user
-      const currentUser = userId || (await supabase.auth.getUser()).data.user?.id;
-      
-      if (!currentUser) return [];
-
-      const { data, error } = await supabase
-        .from('third_party_connections')
-        .select('*')
-        .eq('user_id', currentUser);
-
-      if (error) throw error;
-
-      return data || [];
-    } catch (error) {
-      console.error("Error fetching third-party connections:", error);
-      // Return mock data for demonstration
-      return getMockThirdPartyConnections();
-    }
-  },
-
-  async connectSocialAccount(provider: string, accountDetails: { provider_id: string, username: string }, userId?: string, token?: string) {
-    try {
-      // If no userId is provided, try to get the current user
-      const currentUser = userId || (await supabase.auth.getUser()).data.user?.id;
-      
-      if (!currentUser) throw new Error("No authenticated user found");
-
-      const { error } = await supabase
-        .from('social_connections')
-        .insert({
-          user_id: currentUser,
-          provider,
-          provider_id: accountDetails.provider_id,
-          username: accountDetails.username,
-          connected_at: new Date().toISOString()
-        });
-
-      if (error) throw error;
-
-      return true;
-    } catch (error) {
-      console.error(`Error connecting ${provider} account:`, error);
-      // Simulate successful connection for demonstration
-      return true;
-    }
-  },
-
-  async connectThirdPartyApp(provider: string, accountDetails: { provider_id: string, username: string }, userId?: string, token?: string) {
-    try {
-      // If no userId is provided, try to get the current user
-      const currentUser = userId || (await supabase.auth.getUser()).data.user?.id;
-      
-      if (!currentUser) throw new Error("No authenticated user found");
-
-      const { error } = await supabase
-        .from('third_party_connections')
-        .insert({
-          user_id: currentUser,
-          provider,
-          provider_id: accountDetails.provider_id,
-          username: accountDetails.username,
-          connected_at: new Date().toISOString()
-        });
-
-      if (error) throw error;
-
-      return true;
-    } catch (error) {
-      console.error(`Error connecting ${provider} app:`, error);
-      // Simulate successful connection for demonstration
-      return true;
-    }
-  },
-
-  async disconnectAccount(id: string, type: 'social' | 'third-party', userId?: string) {
-    try {
-      // If no userId is provided, try to get the current user
-      const currentUser = userId || (await supabase.auth.getUser()).data.user?.id;
-      
-      if (!currentUser) throw new Error("No authenticated user found");
-
-      const table = type === 'social' ? 'social_connections' : 'third_party_connections';
-      
-      const { error } = await supabase
-        .from(table)
-        .delete()
-        .eq('id', id)
-        .eq('user_id', currentUser);
-
-      if (error) throw error;
-
-      return true;
-    } catch (error) {
-      console.error("Error disconnecting account:", error);
-      // Simulate successful disconnection for demonstration
-      return true;
+      console.error('Error getting personalized recommendations:', error);
+      throw error;
     }
   }
-};
-
-// Helper functions to generate mock data
-function generateMockRecommendations() {
-  return [
-    {
-      id: "rec-1",
-      name: "Premium Wireless Earbuds",
-      description: "High-quality wireless earbuds with noise cancellation",
-      price: 129.99,
-      image_url: "https://placehold.co/600x400?text=Wireless+Earbuds",
-      category: "Electronics",
-      tags: ["audio", "wireless", "premium"],
-      profit_margin: 35,
-      source: "AI Recommended",
-      product_url: "#"
-    },
-    {
-      id: "rec-2",
-      name: "Smart Fitness Watch",
-      description: "Track your health and fitness goals with this advanced smartwatch",
-      price: 199.99,
-      image_url: "https://placehold.co/600x400?text=Fitness+Watch",
-      category: "Electronics",
-      tags: ["fitness", "wearable", "smart"],
-      profit_margin: 40,
-      source: "AI Recommended",
-      product_url: "#"
+  
+  /**
+   * Get trending products from the database
+   */
+  static async getTrendingProducts(limit = 10): Promise<Product[]> {
+    try {
+      const { data, error } = await supabase
+        .from('scraped_products')
+        .select('*')
+        .eq('is_trending', true)
+        .order('trending_score', { ascending: false })
+        .limit(limit);
+      
+      if (error) throw error;
+      
+      return data;
+    } catch (error) {
+      console.error('Error getting trending products:', error);
+      throw error;
     }
-  ];
-}
-
-function getMockSocialConnections(): SocialConnection[] {
-  return [
-    {
-      id: "soc-1",
-      provider: "twitter",
-      provider_id: "12345",
-      username: "twitteruser",
-      connected_at: new Date().toISOString()
+  }
+  
+  /**
+   * Save user preferences for AI personalization
+   */
+  static async saveUserPreferences(preferences: {
+    enable_personalization: boolean;
+    interests?: string[];
+    price_range_min?: number;
+    price_range_max?: number;
+    enable_shopping_history?: boolean;
+    enable_social_recommendations?: boolean;
+  }): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('user_preferences')
+        .update({
+          ...preferences,
+          last_updated: new Date().toISOString()
+        })
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error saving user preferences:', error);
+      throw error;
     }
-  ];
-}
-
-function getMockThirdPartyConnections(): SocialConnection[] {
-  return [
-    {
-      id: "tpa-1",
-      provider: "shopify",
-      provider_id: "67890",
-      username: "shopifystore",
-      connected_at: new Date().toISOString()
+  }
+  
+  /**
+   * Get user preferences for AI personalization
+   */
+  static async getUserPreferences(): Promise<any> {
+    try {
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      return data;
+    } catch (error) {
+      console.error('Error getting user preferences:', error);
+      throw error;
     }
-  ];
+  }
+
+  /**
+   * Get connected social media accounts
+   */
+  static async getSocialConnections(): Promise<SocialConnection[]> {
+    try {
+      // Use the custom type to cast the response
+      const { data, error } = await supabase
+        .from('social_connections')
+        .select('*')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+      
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error getting social connections:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get connected third-party applications
+   */
+  static async getThirdPartyConnections(): Promise<ThirdPartyConnection[]> {
+    try {
+      // Use the custom type to cast the response
+      const { data, error } = await supabase
+        .from('third_party_connections')
+        .select('*')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+      
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error getting third-party connections:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Connect a social media account
+   */
+  static async connectSocialAccount(provider: string, providerData: {
+    provider_id: string;
+    username: string;
+  }): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('social_connections')
+        .insert({
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          provider,
+          provider_id: providerData.provider_id,
+          username: providerData.username,
+          connected_at: new Date().toISOString()
+        });
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error(`Error connecting ${provider}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Connect a third-party application
+   */
+  static async connectThirdPartyApp(provider: string, providerData: {
+    provider_id: string;
+    username: string;
+  }): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('third_party_connections')
+        .insert({
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          provider,
+          provider_id: providerData.provider_id,
+          username: providerData.username,
+          connected_at: new Date().toISOString()
+        });
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error(`Error connecting ${provider}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Disconnect a social media account or third-party application
+   */
+  static async disconnectAccount(id: string, type: 'social' | 'third-party'): Promise<void> {
+    try {
+      const tableName = type === 'social' ? 'social_connections' : 'third_party_connections';
+      
+      const { error } = await supabase
+        .from(tableName)
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error disconnecting account:', error);
+      throw error;
+    }
+  }
 }

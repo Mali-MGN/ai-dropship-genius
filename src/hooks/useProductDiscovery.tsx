@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -76,6 +77,7 @@ export function useProductDiscovery() {
     async function fetchProducts() {
       try {
         setLoading(true);
+        // Try to get data from supabase
         const { data, error } = await supabase
           .from("scraped_products")
           .select("*");
@@ -85,6 +87,7 @@ export function useProductDiscovery() {
         }
 
         if (data && data.length > 0) {
+          // Transform data to match ProductData interface
           const transformedData: ProductData[] = data.map(item => ({
             id: item.id,
             name: item.name || "",
@@ -108,17 +111,20 @@ export function useProductDiscovery() {
           setProducts(transformedData);
           filterProducts(transformedData, currentTab, searchQuery, selectedCategory);
           
+          // Extract unique categories from products
           const uniqueCategories = Array.from(new Set(transformedData.map(p => p.category)));
           if (uniqueCategories.length > 0) {
             setCategories(uniqueCategories);
           }
         } else {
+          // Use dummy data if no products in Supabase
           const dummyProducts = generateDummyProducts();
           setProducts(dummyProducts);
           filterProducts(dummyProducts, currentTab, searchQuery, selectedCategory);
         }
       } catch (error) {
         console.error("Error fetching products:", error);
+        // Use dummy data if error occurs
         const dummyProducts = generateDummyProducts();
         setProducts(dummyProducts);
         filterProducts(dummyProducts, currentTab, searchQuery, selectedCategory);
@@ -135,6 +141,7 @@ export function useProductDiscovery() {
     fetchProducts();
   }, [selectedRetailer]);
 
+  // When tab, search, or category changes, refilter the products
   useEffect(() => {
     filterProducts(products, currentTab, searchQuery, selectedCategory);
   }, [currentTab, searchQuery, selectedCategory]);
@@ -147,12 +154,11 @@ export function useProductDiscovery() {
         setAiLoading(true);
         
         try {
-          const userResponse = await supabase.auth.getUser();
-          const userId = userResponse?.data?.user?.id;
-          
-          const recommendationsResponse = await AIService.getPersonalizedRecommendations(userId);
+          // Try to get AI recommendations from the AIService
+          const recommendationsResponse = await AIService.getPersonalizedRecommendations();
           
           if (recommendationsResponse && recommendationsResponse.recommendations) {
+            // Transform AI recommendations to match ProductData interface
             const aiRecommendations: ProductData[] = recommendationsResponse.recommendations.map(item => ({
               id: item.id || Math.random().toString(36).substring(2, 11),
               name: item.name || "",
@@ -179,23 +185,27 @@ export function useProductDiscovery() {
             throw new Error("No recommendations returned");
           }
         } catch (error) {
+          // If AIService fails, generate dummy AI recommendations
           const dummyAiRecommendations = generateDummyAIRecommendations();
           setAiRecommendedProducts(dummyAiRecommendations);
         }
         
+        // For top selling products, use trending products from main product data
         const trendingProducts = products
           .filter(p => p.trending)
           .sort((a, b) => b.reviewCount - a.reviewCount)
-          .slice(0, 6);
+          .slice(0, 6);  // Top 6 trending products
           
         if (trendingProducts.length > 0) {
           setTopSellingProducts(trendingProducts);
         } else {
+          // Generate dummy top selling products if none found
           setTopSellingProducts(generateDummyTopSellingProducts());
         }
       } catch (error) {
         console.error("Error in AI recommendations:", error);
         
+        // Generate dummy data for both AI recommendations and top selling products
         setAiRecommendedProducts(generateDummyAIRecommendations());
         setTopSellingProducts(generateDummyTopSellingProducts());
         
@@ -214,6 +224,7 @@ export function useProductDiscovery() {
   const filterProducts = (allProducts: ProductData[], tab: string, query: string, category: string) => {
     let filtered = [...allProducts];
     
+    // Apply search query filter
     if (query) {
       filtered = filtered.filter(
         product => 
@@ -224,25 +235,30 @@ export function useProductDiscovery() {
       );
     }
     
+    // Apply category filter
     if (category && category !== 'all') {
       filtered = filtered.filter(product => product.category === category);
     }
     
+    // Apply tab filter
     switch (tab) {
       case "trending":
         filtered = filtered.filter(product => product.trending);
         break;
       case "profit":
         filtered = filtered.sort((a, b) => b.profitMargin - a.profitMargin);
-        filtered = filtered.slice(0, 20);
+        filtered = filtered.slice(0, 20); // Top 20 products by profit margin
         break;
       case "competitors":
+        // Filter by competitor-related products (for now just show all)
         filtered = [...filtered];
         break;
       default:
+        // No special filtering
         break;
     }
     
+    // Apply sorting
     switch (sortOrder) {
       case "price-asc":
         filtered.sort((a, b) => a.price - b.price);
@@ -257,12 +273,14 @@ export function useProductDiscovery() {
         filtered.sort((a, b) => b.rating - a.rating);
         break;
       default:
+        // No special sorting
         break;
     }
     
     setFilteredProducts(filtered);
   };
 
+  // Helper function to generate dummy products for demonstration
   const generateDummyProducts = (): ProductData[] => {
     const dummyProducts: ProductData[] = [];
     const dummyCategories = ["Electronics", "Fashion", "Home & Kitchen", "Beauty", "Toys & Games"];
@@ -306,6 +324,7 @@ export function useProductDiscovery() {
     return dummyProducts;
   };
 
+  // Helper function to generate dummy AI recommendations
   const generateDummyAIRecommendations = (): ProductData[] => {
     const dummyRecommendations: ProductData[] = [];
     const names = [
@@ -342,6 +361,7 @@ export function useProductDiscovery() {
     return dummyRecommendations;
   };
 
+  // Helper function to generate dummy top selling products
   const generateDummyTopSellingProducts = (): ProductData[] => {
     const dummyTopSelling: ProductData[] = [];
     const names = [
@@ -401,12 +421,14 @@ export function useProductDiscovery() {
     try {
       setImporting(prev => ({ ...prev, [productId]: true }));
       
+      // Get the product details
       const product = products.find(p => p.id === productId) || 
                      aiRecommendedProducts.find(p => p.id === productId) || 
                      topSellingProducts.find(p => p.id === productId);
                      
       if (!product) throw new Error("Product not found");
       
+      // Check if a retailer is selected
       if (!selectedRetailer) {
         toast({
           title: "Select a retailer",
@@ -416,6 +438,7 @@ export function useProductDiscovery() {
         return;
       }
       
+      // Simulate import process
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       toast({
@@ -438,14 +461,17 @@ export function useProductDiscovery() {
     try {
       setExporting(prev => ({ ...prev, [productId]: true }));
       
+      // Get the product details
       const product = products.find(p => p.id === productId) || 
                      aiRecommendedProducts.find(p => p.id === productId) || 
                      topSellingProducts.find(p => p.id === productId);
                      
       if (!product) throw new Error("Product not found");
       
+      // Simulate export process
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Create a formatted product object for export
       const exportData = {
         id: product.id,
         title: product.name,
