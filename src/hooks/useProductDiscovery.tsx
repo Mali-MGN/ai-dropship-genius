@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -25,11 +26,38 @@ interface ProductData {
   aiRecommended?: boolean;
 }
 
+interface ProjectedTrend {
+  category: string;
+  description: string;
+  growthRate: number;
+  color: string;
+}
+
 export function useProductDiscovery() {
   const [products, setProducts] = useState<ProductData[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<ProductData[]>([]);
   const [aiRecommendedProducts, setAiRecommendedProducts] = useState<ProductData[]>([]);
   const [topSellingProducts, setTopSellingProducts] = useState<ProductData[]>([]);
+  const [projectedTrends, setProjectedTrends] = useState<ProjectedTrend[]>([
+    {
+      category: "Eco-Friendly Products",
+      description: "Sustainable goods with minimal environmental impact",
+      growthRate: 32,
+      color: "emerald-500"
+    },
+    {
+      category: "Smart Home Devices",
+      description: "Connected home automation and monitoring products",
+      growthRate: 25,
+      color: "blue-500"
+    },
+    {
+      category: "Pet Accessories",
+      description: "Premium products for pets and pet owners",
+      growthRate: 22,
+      color: "amber-500"
+    }
+  ]);
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,6 +67,11 @@ export function useProductDiscovery() {
   const [exporting, setExporting] = useState<Record<string, boolean>>({});
   const [selectedRetailer, setSelectedRetailer] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState("csv");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [categories, setCategories] = useState<string[]>([
+    "Electronics", "Fashion", "Home & Kitchen", "Beauty", "Toys & Games", 
+    "Sports & Outdoors", "Health & Personal Care"
+  ]);
 
   useEffect(() => {
     async function fetchProducts() {
@@ -76,7 +109,11 @@ export function useProductDiscovery() {
           }));
           
           setProducts(transformedData);
-          filterProducts(transformedData, currentTab, searchQuery);
+          filterProducts(transformedData, currentTab, searchQuery, selectedCategory);
+          
+          // Extract unique categories from products
+          const uniqueCategories = Array.from(new Set(transformedData.map(p => p.category)));
+          setCategories(uniqueCategories);
         }
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -91,7 +128,7 @@ export function useProductDiscovery() {
     }
 
     fetchProducts();
-  }, [currentTab, searchQuery]);
+  }, [currentTab, searchQuery, selectedCategory]);
 
   useEffect(() => {
     async function fetchAiRecommendations() {
@@ -151,7 +188,7 @@ export function useProductDiscovery() {
     fetchAiRecommendations();
   }, [selectedRetailer, products]);
 
-  const filterProducts = (allProducts: ProductData[], tab: string, query: string) => {
+  const filterProducts = (allProducts: ProductData[], tab: string, query: string, category: string) => {
     let filtered = [...allProducts];
     
     // Apply search query filter
@@ -163,6 +200,11 @@ export function useProductDiscovery() {
           product.category.toLowerCase().includes(query.toLowerCase()) ||
           (product.tags && product.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase())))
       );
+    }
+    
+    // Apply category filter
+    if (category && category !== 'all') {
+      filtered = filtered.filter(product => product.category === category);
     }
     
     // Apply tab filter
@@ -207,17 +249,22 @@ export function useProductDiscovery() {
 
   const handleTabChange = (value: string) => {
     setCurrentTab(value);
-    filterProducts(products, value, searchQuery);
+    filterProducts(products, value, searchQuery, selectedCategory);
   };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    filterProducts(products, currentTab, e.target.value);
+    filterProducts(products, currentTab, e.target.value, selectedCategory);
   };
 
   const handleSort = (order: string) => {
     setSortOrder(order);
-    filterProducts(products, currentTab, searchQuery);
+    filterProducts(products, currentTab, searchQuery, selectedCategory);
+  };
+  
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    filterProducts(products, currentTab, searchQuery, category);
   };
 
   const handleImport = async (productId: string) => {
@@ -225,7 +272,10 @@ export function useProductDiscovery() {
       setImporting(prev => ({ ...prev, [productId]: true }));
       
       // Get the product details
-      const product = products.find(p => p.id === productId);
+      const product = products.find(p => p.id === productId) || 
+                     aiRecommendedProducts.find(p => p.id === productId) || 
+                     topSellingProducts.find(p => p.id === productId);
+                     
       if (!product) throw new Error("Product not found");
       
       // Check if a retailer is selected
@@ -243,7 +293,7 @@ export function useProductDiscovery() {
       
       toast({
         title: "Product imported",
-        description: `The product has been imported from ${selectedRetailer}.`,
+        description: `${product.name} has been imported from ${selectedRetailer}.`,
       });
     } catch (error) {
       console.error("Error importing product:", error);
@@ -262,7 +312,10 @@ export function useProductDiscovery() {
       setExporting(prev => ({ ...prev, [productId]: true }));
       
       // Get the product details
-      const product = products.find(p => p.id === productId);
+      const product = products.find(p => p.id === productId) || 
+                     aiRecommendedProducts.find(p => p.id === productId) || 
+                     topSellingProducts.find(p => p.id === productId);
+                     
       if (!product) throw new Error("Product not found");
       
       // Simulate export process
@@ -309,6 +362,7 @@ export function useProductDiscovery() {
     filteredProducts,
     aiRecommendedProducts,
     topSellingProducts,
+    projectedTrends,
     loading,
     aiLoading,
     searchQuery,
@@ -316,6 +370,8 @@ export function useProductDiscovery() {
     sortOrder,
     importing,
     exporting,
+    selectedCategory,
+    categories,
     selectedRetailer,
     exportFormat,
     setSelectedRetailer,
@@ -323,6 +379,7 @@ export function useProductDiscovery() {
     handleTabChange,
     handleSearch,
     handleSort,
+    handleCategoryChange,
     handleImport,
     handleExport
   };

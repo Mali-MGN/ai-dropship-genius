@@ -1,7 +1,7 @@
 
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, DollarSign, BarChart4, AlertCircle } from "lucide-react";
+import { TrendingUp, DollarSign, BarChart4, AlertCircle, CalendarClock } from "lucide-react";
 import { RetailerGrid } from "@/components/product-discovery/RetailerGrid";
 import { IntegrationStatus } from "@/components/product-discovery/IntegrationStatus";
 import { ProductFilters } from "@/components/product-discovery/ProductFilters";
@@ -10,13 +10,15 @@ import { AIRecommendedProducts } from "@/components/product-discovery/AIRecommen
 import { useProductDiscovery } from "@/hooks/useProductDiscovery";
 import { retailers } from "@/data/retailers";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export default function ProductDiscovery() {
   const {
     filteredProducts,
     aiRecommendedProducts,
     topSellingProducts,
+    projectedTrends,
     loading,
     aiLoading,
     searchQuery,
@@ -24,6 +26,8 @@ export default function ProductDiscovery() {
     sortOrder,
     importing,
     exporting,
+    selectedCategory,
+    categories,
     selectedRetailer,
     exportFormat,
     setSelectedRetailer,
@@ -31,18 +35,26 @@ export default function ProductDiscovery() {
     handleTabChange,
     handleSearch,
     handleSort,
+    handleCategoryChange,
     handleImport,
     handleExport
   } = useProductDiscovery();
 
   const hasSelectedRetailer = !!selectedRetailer;
 
+  const todayDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
   return (
     <MainLayout>
       <div className="space-y-6">
         <div className="flex flex-col gap-2 mb-6">
           <h1 className="text-3xl font-semibold tracking-tight">Product Discovery</h1>
-          <p className="text-muted-foreground text-lg">Find trending products to add to your store</p>
+          <p className="text-muted-foreground text-lg">Find trending products to add to your store - Updated {todayDate}</p>
         </div>
         
         {!hasSelectedRetailer && (
@@ -69,8 +81,8 @@ export default function ProductDiscovery() {
           <>
             <div className="grid grid-cols-1 gap-6">
               <AIRecommendedProducts
-                title="AI Recommended Products"
-                description="Personalized product recommendations based on your store and market trends"
+                title="Today's Trending Products"
+                description="Hot products trending right now based on market data and customer behavior"
                 products={aiRecommendedProducts}
                 loading={aiLoading}
                 onImport={handleImport}
@@ -80,6 +92,41 @@ export default function ProductDiscovery() {
                 selectedRetailer={selectedRetailer}
                 retailers={retailers}
               />
+              
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Projected Trends</CardTitle>
+                      <CardDescription>
+                        Product categories expected to grow in popularity in the coming months
+                      </CardDescription>
+                    </div>
+                    <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
+                      <CalendarClock className="h-3.5 w-3.5 mr-1 text-blue-500" />
+                      Future Insights
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {projectedTrends.map((trend, index) => (
+                      <Card key={index} className="border-l-4" style={{ borderLeftColor: trend.color }}>
+                        <CardContent className="p-4">
+                          <h3 className="font-semibold text-lg mb-1">{trend.category}</h3>
+                          <p className="text-sm text-muted-foreground mb-2">{trend.description}</p>
+                          <div className="flex items-center mt-2">
+                            <TrendingUp className={`h-4 w-4 mr-1 text-${trend.color}`} />
+                            <span className={`text-sm font-medium text-${trend.color}`}>
+                              {trend.growthRate}% projected growth
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
               
               <AIRecommendedProducts
                 title="Top Selling Products"
@@ -99,8 +146,11 @@ export default function ProductDiscovery() {
               searchQuery={searchQuery}
               onSearchChange={handleSearch}
               onSortChange={handleSort}
+              onCategoryChange={handleCategoryChange}
               sortOrder={sortOrder}
               exportFormat={exportFormat}
+              selectedCategory={selectedCategory}
+              categories={categories}
               onExportFormatChange={setExportFormat}
             />
             
