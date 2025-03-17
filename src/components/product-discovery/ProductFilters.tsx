@@ -5,8 +5,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Toggle, toggleVariants } from "@/components/ui/toggle";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Badge } from "@/components/ui/badge";
+import { ExpandableTabs } from "@/components/ui/expandable-tabs";
 import { 
   Search, 
   ArrowUpDown, 
@@ -17,10 +17,13 @@ import {
   SlidersHorizontal, 
   Check, 
   RefreshCw,
-  DollarSign
+  DollarSign,
+  Tag as TagIcon,
+  Filter,
+  Clock,
+  ThumbsUp
 } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 
 interface ProductFiltersProps {
   searchQuery: string;
@@ -50,6 +53,21 @@ export function ProductFilters({
   const [priceRange, setPriceRange] = useState([0, 100]);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [freeShipping, setFreeShipping] = useState(false);
+  
+  const filterTabs = [
+    { title: "All", icon: TagIcon },
+    { title: "Price", icon: DollarSign },
+    { title: "Rating", icon: ThumbsUp },
+    { title: "New", icon: Clock },
+    { type: "separator" as const },
+    { title: "Advanced", icon: Filter },
+  ];
+  
+  const handleFilterTabChange = (index: number | null) => {
+    if (index === 5) { // Advanced tab
+      setShowAdvancedFilters(true);
+    }
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-5 mb-6">
@@ -80,29 +98,60 @@ export function ProductFilters({
           </Select>
         </div>
         
+        {/* Expandable filter tabs */}
+        <ExpandableTabs 
+          tabs={filterTabs} 
+          className="w-full" 
+          activeColor="text-primary"
+          onChange={handleFilterTabChange}
+        />
+        
         {/* Sorting options */}
         <div>
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sort By</h3>
-          <ToggleGroup type="single" value={sortOrder} onValueChange={(value) => value && onSortChange(value)}>
-            <ToggleGroupItem value="price-asc" aria-label="Sort by price ascending">
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              variant={sortOrder === "price-asc" ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => onSortChange("price-asc")}
+              className="bg-gray-50 dark:bg-gray-900"
+            >
               <DollarSign className="h-4 w-4 mr-1 text-emerald-600" />
               <ArrowUpDown className="h-4 w-4 mr-1" />
               Price Low-High
-            </ToggleGroupItem>
-            <ToggleGroupItem value="price-desc" aria-label="Sort by price descending">
+            </Button>
+            
+            <Button 
+              variant={sortOrder === "price-desc" ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => onSortChange("price-desc")}
+              className="bg-gray-50 dark:bg-gray-900"
+            >
               <DollarSign className="h-4 w-4 mr-1 text-emerald-600" />
               <ArrowUpDown className="h-4 w-4 mr-1 rotate-180" />
               Price High-Low
-            </ToggleGroupItem>
-            <ToggleGroupItem value="rating" aria-label="Sort by rating">
+            </Button>
+            
+            <Button 
+              variant={sortOrder === "rating" ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => onSortChange("rating")}
+              className="bg-gray-50 dark:bg-gray-900"
+            >
               <Star className="h-4 w-4 mr-1 text-amber-500" />
               Rating
-            </ToggleGroupItem>
-            <ToggleGroupItem value="trending" aria-label="Sort by trending">
+            </Button>
+            
+            <Button 
+              variant={sortOrder === "trending" ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => onSortChange("trending")}
+              className="bg-gray-50 dark:bg-gray-900"
+            >
               <TrendingUp className="h-4 w-4 mr-1 text-rose-500" />
               Trending
-            </ToggleGroupItem>
-          </ToggleGroup>
+            </Button>
+          </div>
         </div>
         
         {/* Advanced filters */}
