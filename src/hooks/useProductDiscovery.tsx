@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { downloadCSV, downloadJSON } from "@/utils/productUtils";
+import { AIService } from "@/utils/AIService";
 
 interface ProductData {
   id: string;
@@ -22,12 +22,16 @@ interface ProductData {
   updatedAt: string;
   productUrl: string;
   inStock: boolean;
+  aiRecommended?: boolean;
 }
 
 export function useProductDiscovery() {
   const [products, setProducts] = useState<ProductData[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<ProductData[]>([]);
+  const [aiRecommendedProducts, setAiRecommendedProducts] = useState<ProductData[]>([]);
+  const [topSellingProducts, setTopSellingProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [aiLoading, setAiLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentTab, setCurrentTab] = useState("trending");
   const [sortOrder, setSortOrder] = useState("trending");
@@ -88,6 +92,64 @@ export function useProductDiscovery() {
 
     fetchProducts();
   }, [currentTab, searchQuery]);
+
+  useEffect(() => {
+    async function fetchAiRecommendations() {
+      if (!selectedRetailer) return;
+      
+      try {
+        setAiLoading(true);
+        
+        // Fetch personalized recommendations using AIService
+        const recommendationsResponse = await AIService.getPersonalizedRecommendations();
+        
+        if (recommendationsResponse && recommendationsResponse.recommendations) {
+          // Transform AI recommendations to match ProductData interface
+          const aiRecommendations: ProductData[] = recommendationsResponse.recommendations.map(item => ({
+            id: item.id || Math.random().toString(36).substring(2, 11),
+            name: item.name || "",
+            description: item.description || "",
+            price: Number(item.price) || 0,
+            imageUrl: item.image_url || "https://placehold.co/600x400?text=No+Image",
+            category: item.category || "Uncategorized",
+            tags: item.tags || [],
+            rating: item.rating || 0,
+            reviewCount: 0,
+            trending: true,
+            profitMargin: item.profit_margin || 0,
+            source: item.source || selectedRetailer,
+            comparePrice: item.compare_price || 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            productUrl: item.product_url || "#",
+            inStock: true,
+            aiRecommended: true
+          }));
+          
+          setAiRecommendedProducts(aiRecommendations);
+          
+          // Also fetch trending products for Top Selling section
+          const trendingProducts = products
+            .filter(p => p.trending)
+            .sort((a, b) => b.reviewCount - a.reviewCount)
+            .slice(0, 6);  // Top 6 trending products
+            
+          setTopSellingProducts(trendingProducts);
+        }
+      } catch (error) {
+        console.error("Error fetching AI recommendations:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch AI recommendations. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setAiLoading(false);
+      }
+    }
+
+    fetchAiRecommendations();
+  }, [selectedRetailer, products]);
 
   const filterProducts = (allProducts: ProductData[], tab: string, query: string) => {
     let filtered = [...allProducts];
@@ -245,7 +307,10 @@ export function useProductDiscovery() {
   return {
     products,
     filteredProducts,
+    aiRecommendedProducts,
+    topSellingProducts,
     loading,
+    aiLoading,
     searchQuery,
     currentTab,
     sortOrder,
