@@ -1,4 +1,6 @@
 
+"use client";
+
 import * as React from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useOnClickOutside } from "usehooks-ts";
@@ -83,10 +85,13 @@ export function ExpandableTabs({
           return <Separator key={`separator-${index}`} />;
         }
 
-        const Icon = tab.icon;
+        // We can safely cast tab as Tab since we've already checked if it's a separator
+        const tabItem = tab as Tab;
+        const Icon = tabItem.icon;
+        
         return (
           <motion.button
-            key={tab.title}
+            key={tabItem.title}
             variants={buttonVariants}
             initial={false}
             animate="animate"
@@ -111,7 +116,7 @@ export function ExpandableTabs({
                   transition={transition}
                   className="overflow-hidden"
                 >
-                  {tab.title}
+                  {tabItem.title}
                 </motion.span>
               )}
             </AnimatePresence>

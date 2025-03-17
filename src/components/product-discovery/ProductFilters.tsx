@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -21,7 +20,8 @@ import {
   Tag as TagIcon,
   Filter,
   Clock,
-  ThumbsUp
+  ThumbsUp,
+  LucideIcon
 } from "lucide-react";
 import { useState } from "react";
 
@@ -55,12 +55,12 @@ export function ProductFilters({
   const [freeShipping, setFreeShipping] = useState(false);
   
   const filterTabs = [
-    { title: "All", icon: TagIcon },
-    { title: "Price", icon: DollarSign },
-    { title: "Rating", icon: ThumbsUp },
-    { title: "New", icon: Clock },
+    { title: "All", icon: TagIcon as LucideIcon },
+    { title: "Price", icon: DollarSign as LucideIcon },
+    { title: "Rating", icon: ThumbsUp as LucideIcon },
+    { title: "New", icon: Clock as LucideIcon },
     { type: "separator" as const },
-    { title: "Advanced", icon: Filter },
+    { title: "Advanced", icon: Filter as LucideIcon },
   ];
   
   const handleFilterTabChange = (index: number | null) => {
@@ -72,7 +72,6 @@ export function ProductFilters({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-5 mb-6">
       <div className="space-y-5">
-        {/* Search and primary filters row */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -98,7 +97,6 @@ export function ProductFilters({
           </Select>
         </div>
         
-        {/* Expandable filter tabs */}
         <ExpandableTabs 
           tabs={filterTabs} 
           className="w-full" 
@@ -106,7 +104,6 @@ export function ProductFilters({
           onChange={handleFilterTabChange}
         />
         
-        {/* Sorting options */}
         <div>
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sort By</h3>
           <div className="flex flex-wrap gap-2">
@@ -154,7 +151,6 @@ export function ProductFilters({
           </div>
         </div>
         
-        {/* Advanced filters */}
         <Popover open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
           <PopoverTrigger asChild>
             <Button variant="outline" className="bg-gray-50 dark:bg-gray-900">
@@ -232,7 +228,6 @@ export function ProductFilters({
           </PopoverContent>
         </Popover>
         
-        {/* Export options */}
         <Popover open={showExportOptions} onOpenChange={setShowExportOptions}>
           <PopoverTrigger asChild>
             <Button variant="outline" className="bg-gray-50 dark:bg-gray-900">
@@ -260,7 +255,6 @@ export function ProductFilters({
           </PopoverContent>
         </Popover>
         
-        {/* Active filters display */}
         {(selectedCategory !== 'all' || sortOrder !== 'trending' || inStockOnly || freeShipping) && (
           <div className="flex flex-wrap gap-2 pt-2">
             <span className="text-sm text-gray-500 dark:text-gray-400 pt-0.5">Active filters:</span>
