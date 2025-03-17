@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -24,6 +23,26 @@ interface ProductData {
   productUrl: string;
   inStock: boolean;
   aiRecommended?: boolean;
+}
+
+interface RawProductData {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image_url: string;
+  category: string;
+  tags: string[];
+  rating?: number;
+  review_count?: number;
+  is_trending?: boolean;
+  profit_margin: number;
+  source: string;
+  compare_price?: number;
+  created_at?: string;
+  updated_at?: string;
+  product_url: string;
+  in_stock?: boolean;
 }
 
 interface ProjectedTrend {
@@ -88,7 +107,7 @@ export function useProductDiscovery() {
 
         if (data && data.length > 0) {
           // Transform data to match ProductData interface
-          const transformedData: ProductData[] = data.map(item => ({
+          const transformedData: ProductData[] = data.map((item: RawProductData) => ({
             id: item.id,
             name: item.name || "",
             description: item.description || "",
@@ -105,7 +124,7 @@ export function useProductDiscovery() {
             createdAt: item.created_at || new Date().toISOString(),
             updatedAt: item.updated_at || new Date().toISOString(),
             productUrl: item.product_url || "#",
-            inStock: true
+            inStock: item.in_stock ?? true
           }));
           
           setProducts(transformedData);
@@ -141,7 +160,6 @@ export function useProductDiscovery() {
     fetchProducts();
   }, [selectedRetailer]);
 
-  // When tab, search, or category changes, refilter the products
   useEffect(() => {
     filterProducts(products, currentTab, searchQuery, selectedCategory);
   }, [currentTab, searchQuery, selectedCategory]);
@@ -280,7 +298,6 @@ export function useProductDiscovery() {
     setFilteredProducts(filtered);
   };
 
-  // Helper function to generate dummy products for demonstration
   const generateDummyProducts = (): ProductData[] => {
     const dummyProducts: ProductData[] = [];
     const dummyCategories = ["Electronics", "Fashion", "Home & Kitchen", "Beauty", "Toys & Games"];
@@ -324,7 +341,6 @@ export function useProductDiscovery() {
     return dummyProducts;
   };
 
-  // Helper function to generate dummy AI recommendations
   const generateDummyAIRecommendations = (): ProductData[] => {
     const dummyRecommendations: ProductData[] = [];
     const names = [
@@ -361,7 +377,6 @@ export function useProductDiscovery() {
     return dummyRecommendations;
   };
 
-  // Helper function to generate dummy top selling products
   const generateDummyTopSellingProducts = (): ProductData[] => {
     const dummyTopSelling: ProductData[] = [];
     const names = [
