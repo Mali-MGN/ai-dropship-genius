@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { UserPreferences } from '@/lib/utils';
 import { AIService } from "@/utils/AIService";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 // This would be connected to your data store in a real implementation
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -125,12 +126,13 @@ export const PersonalizationSettings = ({
     }));
 
     try {
-      const { error } = await supabase
-        .from('user_preferences')
-        .update({ enable_personalization: enabled })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      await AIService.saveUserPreferences({
+        enable_personalization: enabled,
+        interests: preferences.interests,
+        price_range_min: preferences.priceRange.min,
+        price_range_max: preferences.priceRange.max,
+        enable_social_recommendations: enableSocialRecommendations
+      });
     } catch (error) {
       console.error('Error updating personalization setting:', error);
       toast({
@@ -147,12 +149,13 @@ export const PersonalizationSettings = ({
     setEnableSocialRecommendations(enabled);
 
     try {
-      const { error } = await supabase
-        .from('user_preferences')
-        .update({ enable_social_recommendations: enabled })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      await AIService.saveUserPreferences({
+        enable_personalization: preferences.enablePersonalization,
+        interests: preferences.interests,
+        price_range_min: preferences.priceRange.min,
+        price_range_max: preferences.priceRange.max,
+        enable_social_recommendations: enabled
+      });
       
       toast({
         title: "Setting Updated",
@@ -190,12 +193,13 @@ export const PersonalizationSettings = ({
       }));
       
       try {
-        const { error } = await supabase
-          .from('user_preferences')
-          .update({ interests: updatedInterests })
-          .eq('user_id', user.id);
-
-        if (error) throw error;
+        await AIService.saveUserPreferences({
+          enable_personalization: preferences.enablePersonalization,
+          interests: updatedInterests,
+          price_range_min: preferences.priceRange.min,
+          price_range_max: preferences.priceRange.max,
+          enable_social_recommendations: enableSocialRecommendations
+        });
         
         setNewInterest("");
       } catch (error) {
@@ -226,12 +230,13 @@ export const PersonalizationSettings = ({
     }));
     
     try {
-      const { error } = await supabase
-        .from('user_preferences')
-        .update({ interests: updatedInterests })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      await AIService.saveUserPreferences({
+        enable_personalization: preferences.enablePersonalization,
+        interests: updatedInterests,
+        price_range_min: preferences.priceRange.min,
+        price_range_max: preferences.priceRange.max,
+        enable_social_recommendations: enableSocialRecommendations
+      });
     } catch (error) {
       console.error('Error removing interest:', error);
       toast({
@@ -248,19 +253,13 @@ export const PersonalizationSettings = ({
     setIsSaving(true);
     
     try {
-      const { error } = await supabase
-        .from('user_preferences')
-        .update({
-          price_range_min: preferences.priceRange.min,
-          price_range_max: preferences.priceRange.max,
-          interests: preferences.interests,
-          enable_personalization: preferences.enablePersonalization,
-          enable_social_recommendations: enableSocialRecommendations,
-          last_updated: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      await AIService.saveUserPreferences({
+        enable_personalization: preferences.enablePersonalization,
+        interests: preferences.interests,
+        price_range_min: preferences.priceRange.min,
+        price_range_max: preferences.priceRange.max,
+        enable_social_recommendations: enableSocialRecommendations
+      });
       
       toast({
         title: "Preferences saved",
