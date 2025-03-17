@@ -12,6 +12,8 @@ import { retailers } from "@/data/retailers";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from "react";
+import { toast } from "@/components/ui/use-toast";
 
 export default function ProductDiscovery() {
   const {
@@ -39,6 +41,14 @@ export default function ProductDiscovery() {
     handleImport,
     handleExport
   } = useProductDiscovery();
+
+  useEffect(() => {
+    // Notify users when the page loads successfully
+    toast({
+      title: "Product Discovery Loaded",
+      description: "Explore trending products to add to your store.",
+    });
+  }, []);
 
   const hasSelectedRetailer = !!selectedRetailer;
 
