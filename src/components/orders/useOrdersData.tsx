@@ -93,11 +93,14 @@ export function useOrdersData({
         )
       );
       
-      const { error } = await supabase.functions.invoke('update-order-status', {
+      const { data, error } = await supabase.functions.invoke('update-order-status', {
         body: { orderId, newStatus },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating order:', error, data); // Log both error and data for better debugging
+        throw error;
+      }
       
       toast({
         title: "Success",
