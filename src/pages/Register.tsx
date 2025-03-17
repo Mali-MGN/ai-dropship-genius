@@ -13,6 +13,7 @@ import { AlertCircle } from 'lucide-react';
 export function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -25,9 +26,12 @@ export function Register() {
     setError(null);
 
     try {
-      const { error } = await signUp(email, password);
+      const result = await signUp(email, password, name);
 
-      if (error) throw error;
+      if (result.error) {
+        setError(result.error.message || 'An error occurred during registration');
+        return;
+      }
       
       setSuccess(true);
       toast({
@@ -78,6 +82,17 @@ export function Register() {
             </div>
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input

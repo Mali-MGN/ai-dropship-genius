@@ -25,9 +25,12 @@ export function Login() {
     setError(null);
 
     try {
-      const { error } = await signIn(email, password);
+      const result = await signIn(email, password);
 
-      if (error) throw error;
+      if (result.error) {
+        setError(result.error.message || 'An error occurred during login');
+        return;
+      }
       
       toast({
         title: "Successfully signed in",

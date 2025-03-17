@@ -7,14 +7,18 @@ interface User {
   id: string;
   email?: string;
   name?: string;
+  user_metadata?: {
+    [key: string]: any;
+  };
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{error?: Error}>;
+  signUp: (email: string, password: string, name?: string) => Promise<{error?: Error}>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{error?: Error}>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser({
             id: data.session.user.id,
             email: data.session.user.email,
+            user_metadata: data.session.user.user_metadata
           });
         }
       } catch (error) {
@@ -52,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser({
             id: session.user.id,
             email: session.user.email,
+            user_metadata: session.user.user_metadata
           });
         } else {
           setUser(null);
@@ -73,17 +79,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) throw error;
+      
+      return {};
     } catch (error: any) {
       toast({
         title: "Sign in failed",
         description: error.message || "An error occurred during sign in",
         variant: "destructive",
       });
-      throw error;
+      return { error };
     }
   };
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (email: string, password: string, name?: string) => {
     try {
       const { error } = await supabase.auth.signUp({
         email,
@@ -101,13 +109,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Sign up successful",
         description: "Please check your email for verification",
       });
+      
+      return {};
     } catch (error: any) {
       toast({
         title: "Sign up failed",
         description: error.message || "An error occurred during sign up",
         variant: "destructive",
       });
-      throw error;
+      return { error };
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+      
+      return {};
+    } catch (error: any) {
+      toast({
+        title: "Password reset failed",
+        description: error.message || "An error occurred during password reset",
+        variant: "destructive",
+      });
+      return { error };
     }
   };
 
@@ -133,6 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signUp,
         signOut,
+        resetPassword
       }}
     >
       {children}
