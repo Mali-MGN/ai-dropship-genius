@@ -5,16 +5,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { ProductCard } from "@/components/dashboard/ProductCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/context/AuthContext";
 import {
   Search,
   Sparkles,
   Lightbulb,
   Target,
+  ShoppingCart,
+  Zap,
   TrendingUp,
+  Share2,
   Loader2
 } from "lucide-react";
 import { AIProductPromptGenerator } from "@/components/ai-discovery/AIProductPromptGenerator";
@@ -36,7 +40,6 @@ interface Product {
 }
 
 export default function AIProductDiscovery() {
-  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [generatedProducts, setGeneratedProducts] = useState<Product[]>([]);
@@ -48,25 +51,18 @@ export default function AIProductDiscovery() {
     setLoading(true);
     try {
       const { data: recommendations, error } = await supabase.functions.invoke('personalized-recommendations', {
-        body: { 
-          search: searchQuery,
-          userId: user?.id 
-        }
+        body: { search: searchQuery }
       });
 
       if (error) throw error;
 
       setGeneratedProducts(recommendations.recommendations || []);
       
-      const connectionsMessage = recommendations.applied_filters?.connected_accounts 
-        ? `Based on ${recommendations.applied_filters.connected_accounts.social} social and ${recommendations.applied_filters.connected_accounts.third_party} app connections` 
-        : '';
-      
       toast({
         title: recommendations.personalized 
           ? "Personalized recommendations loaded" 
           : "Trending products loaded",
-        description: `${recommendations.message}. ${connectionsMessage}`,
+        description: recommendations.message,
       });
     } catch (error) {
       console.error("Error fetching personalized recommendations:", error);
@@ -108,10 +104,8 @@ export default function AIProductDiscovery() {
 
   // Initial load of recommendations
   useEffect(() => {
-    if (user) {
-      fetchPersonalizedRecommendations();
-    }
-  }, [user]);
+    fetchPersonalizedRecommendations();
+  }, []);
 
   // Handle search query submission
   const handleSearch = (e: React.FormEvent) => {

@@ -83,11 +83,9 @@ export class AIService {
   /**
    * Get personalized product recommendations for the current user
    */
-  static async getPersonalizedRecommendations(userId?: string): Promise<PersonalizedRecommendationsResponse> {
+  static async getPersonalizedRecommendations(): Promise<PersonalizedRecommendationsResponse> {
     try {
-      const { data, error } = await supabase.functions.invoke('personalized-recommendations', {
-        body: { userId }
-      });
+      const { data, error } = await supabase.functions.invoke('personalized-recommendations');
       
       if (error) throw error;
       
@@ -171,6 +169,7 @@ export class AIService {
    */
   static async getSocialConnections(): Promise<SocialConnection[]> {
     try {
+      // Use the custom type to cast the response
       const { data, error } = await supabase
         .from('social_connections')
         .select('*')
@@ -190,6 +189,7 @@ export class AIService {
    */
   static async getThirdPartyConnections(): Promise<ThirdPartyConnection[]> {
     try {
+      // Use the custom type to cast the response
       const { data, error } = await supabase
         .from('third_party_connections')
         .select('*')

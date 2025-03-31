@@ -31,29 +31,10 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Parse request body if it exists to get additional context
-    let requestParams = {};
-    let userId = null;
-    
-    if (req.headers.get('content-type')?.includes('application/json')) {
-      try {
-        const body = await req.json();
-        requestParams = body;
-        userId = body.userId;
-      } catch (e) {
-        console.log('No JSON body or error parsing it:', e);
-      }
-    }
-
-    if (!userId) {
-      userId = (await supabaseClient.auth.getUser()).data.user?.id;
-    }
-
     // Get the user's browsing history and preferences
     const { data: userPreferences, error: userPreferencesError } = await supabaseClient
       .from('user_preferences')
       .select('*')
-      .eq('user_id', userId)
       .single();
 
     if (userPreferencesError && userPreferencesError.code !== 'PGRST116') {
@@ -62,6 +43,16 @@ serve(async (req) => {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
+    }
+
+    // Parse request body if it exists to get additional context
+    let requestParams = {};
+    if (req.headers.get('content-type')?.includes('application/json')) {
+      try {
+        requestParams = await req.json();
+      } catch (e) {
+        console.log('No JSON body or error parsing it:', e);
+      }
     }
 
     // If no preferences found or personalization is disabled, return trending products
@@ -95,7 +86,7 @@ serve(async (req) => {
     const { data: socialConnections, error: socialConnectionsError } = await supabaseClient
       .from('social_connections')
       .select('*')
-      .eq('user_id', userId);
+      .eq('user_id', (await supabaseClient.auth.getUser()).data.user?.id);
 
     if (socialConnectionsError && socialConnectionsError.code !== 'PGRST116') {
       console.error('Error getting social connections:', socialConnectionsError);
@@ -105,7 +96,7 @@ serve(async (req) => {
     const { data: thirdPartyConnections, error: thirdPartyConnectionsError } = await supabaseClient
       .from('third_party_connections')
       .select('*')
-      .eq('user_id', userId);
+      .eq('user_id', (await supabaseClient.auth.getUser()).data.user?.id);
 
     if (thirdPartyConnectionsError && thirdPartyConnectionsError.code !== 'PGRST116') {
       console.error('Error getting third-party connections:', thirdPartyConnectionsError);
