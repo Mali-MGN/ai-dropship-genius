@@ -2,142 +2,77 @@
 export interface AITool {
   id: string;
   name: string;
-  category: 'marketing' | 'analytics' | 'research' | 'operations' | 'customer-service';
   description: string;
-  imageUrl: string;
   url: string;
-  pricing: string;
+  imageUrl: string;
   features: string[];
+  pricing: string;
+  category: string;
 }
 
 export const aiTools: AITool[] = [
-  // Marketing Tools
   {
-    id: 'mailchimp-ai',
-    name: 'Mailchimp AI',
-    category: 'marketing',
-    description: 'AI-powered email marketing platform with audience segmentation and campaign optimization',
-    imageUrl: 'https://logo.clearbit.com/mailchimp.com',
-    url: 'https://mailchimp.com',
-    pricing: 'Free tier available, paid plans from $11/month',
-    features: ['Email automation', 'Audience segmentation', 'Campaign analytics', 'A/B testing']
+    id: "openai",
+    name: "ChatGPT",
+    description: "Leading conversational AI with capabilities across text generation, translation, and creative tasks.",
+    url: "https://chat.openai.com",
+    imageUrl: "/placeholder.svg?height=40&width=40",
+    features: [
+      "Natural language understanding and generation",
+      "Code assistance and explanations",
+      "Content creation and summarization"
+    ],
+    pricing: "Free tier with premium plans starting at $20/month",
+    category: "chat"
   },
   {
-    id: 'hootsuite-ai',
-    name: 'Hootsuite AI',
-    category: 'marketing',
-    description: 'Social media management platform with AI-powered content suggestions and scheduling',
-    imageUrl: 'https://logo.clearbit.com/hootsuite.com',
-    url: 'https://hootsuite.com',
-    pricing: 'From $49/month',
-    features: ['Content scheduling', 'Performance analytics', 'Audience engagement', 'Multi-platform management']
+    id: "midjourney",
+    name: "Midjourney",
+    description: "Create stunning artwork and illustrations from text prompts with this AI image generator.",
+    url: "https://midjourney.com",
+    imageUrl: "/placeholder.svg?height=40&width=40",
+    features: [
+      "High-quality image generation from text",
+      "Style customization and fine-tuning",
+      "Rapid iterations and variations"
+    ],
+    pricing: "Plans starting at $10/month",
+    category: "image"
   },
   {
-    id: 'jasper-ai',
-    name: 'Jasper',
-    category: 'marketing',
-    description: 'AI content creation platform for generating marketing copy, blog posts, and product descriptions',
-    imageUrl: 'https://logo.clearbit.com/jasper.ai',
-    url: 'https://jasper.ai',
-    pricing: 'From $39/month',
-    features: ['Blog post generation', 'Ad copy creation', 'Product descriptions', 'Email templates']
-  },
-  
-  // Analytics Tools
-  {
-    id: 'google-analytics',
-    name: 'Google Analytics 4',
-    category: 'analytics',
-    description: 'AI-enhanced web analytics platform for tracking user behavior and generating insights',
-    imageUrl: 'https://logo.clearbit.com/google.com',
-    url: 'https://analytics.google.com',
-    pricing: 'Free tier available',
-    features: ['User behavior tracking', 'Conversion tracking', 'Audience insights', 'Predictive metrics']
-  },
-  {
-    id: 'tableau',
-    name: 'Tableau',
-    category: 'analytics',
-    description: 'Data visualization and business intelligence platform with AI-powered analytics',
-    imageUrl: 'https://logo.clearbit.com/tableau.com',
-    url: 'https://tableau.com',
-    pricing: 'From $70/month',
-    features: ['Interactive dashboards', 'Data visualization', 'Predictive analytics', 'Data integration']
-  },
-  
-  // Research Tools
-  {
-    id: 'crayon',
-    name: 'Crayon',
-    category: 'research',
-    description: 'AI-powered competitive intelligence platform for market and competitor analysis',
-    imageUrl: 'https://logo.clearbit.com/crayon.co',
-    url: 'https://crayon.co',
-    pricing: 'Custom pricing',
-    features: ['Competitor tracking', 'Market intelligence', 'Trend analysis', 'Alert system']
-  },
-  {
-    id: 'semrush',
-    name: 'SEMrush',
-    category: 'research',
-    description: 'Marketing research platform with AI-driven keyword analysis and content optimization',
-    imageUrl: 'https://logo.clearbit.com/semrush.com',
-    url: 'https://semrush.com',
-    pricing: 'From $119.95/month',
-    features: ['Keyword research', 'Competitor analysis', 'SEO auditing', 'Content marketing platform']
-  },
-  
-  // Operations Tools
-  {
-    id: 'inventory-planner',
-    name: 'Inventory Planner',
-    category: 'operations',
-    description: 'AI-powered inventory management system for forecasting and optimization',
-    imageUrl: 'https://logo.clearbit.com/inventoryplanner.com',
-    url: 'https://inventoryplanner.com',
-    pricing: 'From $99/month',
-    features: ['Demand forecasting', 'Stock level optimization', 'Replenishment recommendations', 'Supplier management']
-  },
-  
-  // Customer Service Tools
-  {
-    id: 'intercom',
-    name: 'Intercom',
-    category: 'customer-service',
-    description: 'Customer messaging platform with AI chatbots and automated support',
-    imageUrl: 'https://logo.clearbit.com/intercom.com',
-    url: 'https://intercom.com',
-    pricing: 'From $74/month',
-    features: ['Live chat', 'AI chatbots', 'Knowledge base', 'Customer data platform']
-  },
-  {
-    id: 'zendesk',
-    name: 'Zendesk',
-    category: 'customer-service',
-    description: 'Customer service software with AI-powered ticket routing and self-service',
-    imageUrl: 'https://logo.clearbit.com/zendesk.com',
-    url: 'https://zendesk.com',
-    pricing: 'From $49/month',
-    features: ['Ticket management', 'AI answer bot', 'Knowledge base', 'Customer portal']
+    id: "jasper",
+    name: "Jasper AI",
+    description: "AI writing assistant specialized for marketing content and copywriting.",
+    url: "https://jasper.ai",
+    imageUrl: "/placeholder.svg?height=40&width=40",
+    features: [
+      "Blog posts and article writing",
+      "Marketing copy and social media content",
+      "SEO optimization suggestions"
+    ],
+    pricing: "Starting at $39/month",
+    category: "writing"
   }
 ];
 
-export const getToolsByCategory = (category: string) => {
+// Helper functions for AIToolExplorer
+export function getAllCategories(): string[] {
+  const categories = [...new Set(aiTools.map(tool => tool.category))];
+  return categories;
+}
+
+export function getToolsByCategory(category: string): AITool[] {
   return aiTools.filter(tool => tool.category === category);
-};
+}
 
-export const getAllCategories = () => {
-  return ['marketing', 'analytics', 'research', 'operations', 'customer-service'];
-};
-
-export const getCategoryLabel = (category: string): string => {
-  const labels: Record<string, string> = {
-    'marketing': 'Marketing',
-    'analytics': 'Analytics & Insights',
-    'research': 'Research & Development',
-    'operations': 'Operations Management',
-    'customer-service': 'Customer Service'
+export function getCategoryLabel(category: string): string {
+  const categoryLabels: Record<string, string> = {
+    "chat": "Chat AI",
+    "image": "Image Generation",
+    "writing": "Content Writing",
+    "audio": "Audio Processing",
+    "video": "Video Creation"
   };
   
-  return labels[category] || category;
-};
+  return categoryLabels[category] || category.charAt(0).toUpperCase() + category.slice(1);
+}

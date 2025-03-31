@@ -64,22 +64,15 @@ export function useOrdersData({
       
       if (error) throw error;
       
-      // Transform data to match the Order interface
-      const transformedData: Order[] = (data || []).map((item: any) => ({
-        id: item.id,
-        order_id: item.order_id,
-        customer_name: item.customer_name,
-        customer_email: item.customer_email,
-        amount: item.amount,
-        status: item.status,
-        order_date: item.order_date,
-        tracking_number: item.tracking_number,
-        tracking_url: item.tracking_url,
-        product: item.product ? { name: item.product.name } : null,
-        retailer: item.retailer ? { name: item.retailer.name } : null
-      }));
+      // Cast the data to the correct type
+      const formattedOrders = (data || []).map(item => ({
+        ...item,
+        // Ensure product and retailer are objects not arrays
+        product: { name: item.product?.name || 'Unknown' },
+        retailer: { name: item.retailer?.name || 'Unknown' }
+      })) as Order[];
       
-      setOrders(transformedData);
+      setOrders(formattedOrders);
       setTotalOrders(count || 0);
     } catch (error) {
       console.error('Error fetching orders:', error);

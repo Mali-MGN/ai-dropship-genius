@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -11,7 +10,31 @@ import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/lib/utils";
 import { ArrowLeft, ExternalLink, PackageOpen, RefreshCw, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { OrderDetails as OrderDetailsType } from "@/types/orders";
+
+interface OrderDetails {
+  id: string;
+  order_id: string;
+  customer_name: string;
+  customer_email: string;
+  customer_address: string;
+  amount: number;
+  cost: number;
+  profit: number;
+  status: string;
+  order_date: string;
+  estimated_delivery: string | null;
+  actual_delivery: string | null;
+  tracking_number: string | null;
+  tracking_url: string | null;
+  product: {
+    id: string;
+    name: string;
+    image_url: string | null;
+  };
+  retailer: {
+    name: string;
+  };
+}
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -55,7 +78,7 @@ const getDeliveryProgress = (status: string) => {
 
 const OrderDetails = () => {
   const { orderId } = useParams<{ orderId: string }>();
-  const [order, setOrder] = useState<OrderDetailsType | null>(null);
+  const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const navigate = useNavigate();
@@ -91,33 +114,7 @@ const OrderDetails = () => {
       
       if (error) throw error;
       
-      // Transform data to match the OrderDetails type
-      const transformedData: OrderDetailsType = {
-        id: data.id,
-        order_id: data.order_id,
-        customer_name: data.customer_name,
-        customer_email: data.customer_email,
-        customer_address: data.customer_address,
-        amount: data.amount,
-        cost: data.cost,
-        profit: data.profit,
-        status: data.status,
-        order_date: data.order_date,
-        estimated_delivery: data.estimated_delivery,
-        actual_delivery: data.actual_delivery,
-        tracking_number: data.tracking_number,
-        tracking_url: data.tracking_url,
-        product: {
-          id: data.product ? data.product.id : '',
-          name: data.product ? data.product.name : '',
-          image_url: data.product ? data.product.image_url : null
-        },
-        retailer: {
-          name: data.retailer ? data.retailer.name : ''
-        }
-      };
-      
-      setOrder(transformedData);
+      setOrder(data);
     } catch (error) {
       console.error('Error fetching order details:', error);
       toast({
