@@ -64,15 +64,7 @@ export function useOrdersData({
       
       if (error) throw error;
       
-      // Cast the data to the correct type
-      const formattedOrders = (data || []).map(item => ({
-        ...item,
-        // Ensure product and retailer are objects not arrays
-        product: { name: item.product?.name || 'Unknown' },
-        retailer: { name: item.retailer?.name || 'Unknown' }
-      })) as Order[];
-      
-      setOrders(formattedOrders);
+      setOrders(data as Order[] || []);
       setTotalOrders(count || 0);
     } catch (error) {
       console.error('Error fetching orders:', error);

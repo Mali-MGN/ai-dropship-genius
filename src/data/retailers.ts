@@ -7,33 +7,41 @@ export interface RetailerInfo {
   description: string;
 }
 
+// Popular retailers for dropshipping
 export const retailers: RetailerInfo[] = [
-  {
-    id: "shopify",
-    name: "Shopify",
-    logo: "/placeholder.svg?height=64&width=64",
-    url: "https://shopify.com",
-    description: "Connect your Shopify store",
+  { 
+    id: "aliexpress", 
+    name: "AliExpress", 
+    logo: "https://cdn.worldvectorlogo.com/logos/aliexpress-logo.svg", 
+    url: "https://www.aliexpress.com/",
+    description: "Popular global marketplace with millions of products at competitive prices"
   },
-  {
-    id: "woocommerce",
-    name: "WooCommerce",
-    logo: "/placeholder.svg?height=64&width=64",
-    url: "https://woocommerce.com",
-    description: "Connect your WooCommerce store",
+  { 
+    id: "amazon", 
+    name: "Amazon", 
+    logo: "https://cdn.worldvectorlogo.com/logos/amazon-2.svg", 
+    url: "https://www.amazon.com/",
+    description: "Massive selection and fast shipping options for Prime members"
   },
-  {
-    id: "amazon",
-    name: "Amazon",
-    logo: "/placeholder.svg?height=64&width=64",
-    url: "https://sellercentral.amazon.com",
-    description: "Connect your Amazon seller account",
+  { 
+    id: "shopify", 
+    name: "Shopify", 
+    logo: "https://cdn.worldvectorlogo.com/logos/shopify.svg", 
+    url: "https://www.shopify.com/",
+    description: "Platform to easily set up your own dropshipping store"
   },
-  {
-    id: "etsy",
-    name: "Etsy",
-    logo: "/placeholder.svg?height=64&width=64",
-    url: "https://etsy.com/your/shops",
-    description: "Connect your Etsy shop",
+  { 
+    id: "spocket", 
+    name: "Spocket", 
+    logo: "https://cdn.shopify.com/app-store/listing_images/7b9e2b842ba1dd353e2cef7fcdcbcd45/icon/COPUmvjytfgCEAE=.png", 
+    url: "https://www.spocket.co/",
+    description: "Curated marketplace of US and EU suppliers with fast shipping"
   },
+  { 
+    id: "cjdropshipping", 
+    name: "CJ Dropshipping", 
+    logo: "https://play-lh.googleusercontent.com/XqqUT5cmgf7CpZvXLVipRgNrbxk-bm4NbfxQiGZMvfVGuiQMC-JJPaJFfEqLmm_YXjo", 
+    url: "https://cjdropshipping.com/",
+    description: "Product sourcing, fulfillment, and shipping services worldwide"
+  }
 ];

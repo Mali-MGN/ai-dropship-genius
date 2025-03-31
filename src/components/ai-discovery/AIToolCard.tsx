@@ -12,7 +12,7 @@ interface AIToolCardProps {
 
 export function AIToolCard({ tool }: AIToolCardProps) {
   return (
-    <Card className="h-full flex flex-col transition-all duration-300 hover:shadow-elevation hover:-translate-y-1 hover:bg-secondary/50 dark:hover:bg-secondary/20">
+    <Card className="h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="h-10 w-10 bg-primary/10 rounded-md flex items-center justify-center overflow-hidden">
@@ -25,12 +25,12 @@ export function AIToolCard({ tool }: AIToolCardProps) {
               }}
             />
           </div>
-          <Badge variant="outline" className="capitalize font-medium text-xs">
+          <Badge variant="outline" className="capitalize">
             {tool.pricing.includes('Free') ? 'Free tier' : 'Paid'}
           </Badge>
         </div>
-        <CardTitle className="mt-2 text-lg md:text-xl">{tool.name}</CardTitle>
-        <CardDescription className="line-clamp-2">{tool.description}</CardDescription>
+        <CardTitle className="mt-2">{tool.name}</CardTitle>
+        <CardDescription>{tool.description}</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
         <div className="space-y-2">
@@ -39,22 +39,17 @@ export function AIToolCard({ tool }: AIToolCardProps) {
             {tool.features.map((feature, index) => (
               <li key={index} className="flex items-start">
                 <span className="h-1.5 w-1.5 bg-primary rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
-                <span className="text-muted-foreground line-clamp-2">{feature}</span>
+                <span className="text-muted-foreground">{feature}</span>
               </li>
             ))}
           </ul>
         </div>
       </CardContent>
       <CardFooter className="pt-2 flex justify-between items-center">
-        <div className="text-xs md:text-sm text-muted-foreground truncate max-w-[60%]">
+        <div className="text-sm text-muted-foreground">
           {tool.pricing}
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => window.open(tool.url, '_blank')}
-          className="transition-colors hover:bg-primary hover:text-primary-foreground"
-        >
+        <Button variant="outline" size="sm" onClick={() => window.open(tool.url, '_blank')}>
           <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
           Visit
         </Button>
